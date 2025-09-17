@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S&P 500 Market Breadth Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .market-breadth-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            min-height: 100vh;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        
+        .dashboard-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            margin: 0;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .gauge-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .gauge-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .gauge-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .gauge-value {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .gauge-number {
+            font-size: 56px;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+            margin: 0;
+        }
+        
+        .gauge-label {
+            font-size: 16px;
+            color: #cccccc;
+            margin: 5px 0 0 0;
+            letter-spacing: 1px;
+        }
+        
+        .gauge-signal {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 12px 24px;
+            border-radius: 25px;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .signal-bullish { 
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: #000;
+        }
+        
+        .signal-neutral { 
+            background: linear-gradient(45deg, #ffaa00, #ff8800);
+            color: #000;
+        }
+        
+        .signal-bearish { 
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+        
+        .overview-text {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #00ff88;
+            margin-top: 20px;
+        }
+        
+        .overview-text h3 {
+            margin: 0 0 15px 0;
+            color: #00ff88;
+            font-size: 20px;
+        }
+        
+        .overview-text p {
+            margin: 10px 0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .chart-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .chart-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 20px 0;
+            color: #00ff88;
+            text-align: center;
+        }
+        
+        .chart-container {
+            height: 350px;
+            position: relative;
+        }
+        
+        .time-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .time-btn {
+            padding: 10px 18px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .time-btn:hover {
+            background: #555;
+            transform: translateY(-1px);
+        }
+        
+        .time-btn.active {
+            background: #00ff88;
+            color: #000;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        
+        .heatmap-section {
+            margin-top: 30px;
+        }
+        
+        .heatmap-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 25px 0;
+            color: #00ff88;
+            text-align: center;
+        }
+        
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        
+        .heatmap-cell {
+            padding: 18px 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .heatmap-sector {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .heatmap-percentage {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .heatmap-count {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+        
+        /* Heatmap colors based on strength */
+        .strength-very-strong { 
+            background: linear-gradient(135deg, #00ff88, #00cc6a); 
+            color: #000; 
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        .strength-strong { 
+            background: linear-gradient(135deg, #88ff00, #66cc00); 
+            color: #000; 
+        }
+        .strength-moderate { 
+            background: linear-gradient(135deg, #ffaa00, #cc8800); 
+            color: #000; 
+        }
+        .strength-weak { 
+            background: linear-gradient(135deg, #ff6600, #cc4400); 
+            color: #fff; 
+        }
+        .strength-very-weak { 
+            background: linear-gradient(135deg, #ff4444, #cc0000); 
+            color: #fff; 
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        }
+        
+        .last-updated {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: #00ff88;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ff88;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .market-breadth-dashboard {
+                padding: 15px;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .gauge-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .gauge-number {
+                font-size: 42px;
+            }
+            
+            .dashboard-title {
+                font-size: 26px;
+            }
+            
+            .heatmap-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
+            
+            .time-buttons {
+                gap: 8px;
+            }
+            
+            .time-btn {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="market-breadth-dashboard" id="marketBreadthDashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">S&P 500 Market Breadth</h1>
+            <p class="dashboard-subtitle">Real-time market internals and sector analysis</p>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            Loading market data...
+        </div>
+        
+        <div id="dashboardContent" style="display: none;">
+            <div class="main-content">
+                <div class="gauge-section">
+                    <div class="gauge-container">
+                        <canvas id="gaugeChart" class="gauge-canvas"></canvas>
+                        <div class="gauge-value">
+                            <div class="gauge-number" id="gaugeNumber">--</div>
+                            <div class="gauge-label">MARKET BREADTH</div>
+                        </div>
+                    </div>
+                    <div class="gauge-signal" id="gaugeSignal">LOADING...</div>
+                    
+                    <div class="overview-text">
+                        <h3>Overview</h3>
+                        <p><strong>BREADTH</strong> is the percentage of stocks in an <strong>INDUSTRY</strong> that are trading above their 20-day moving average.</p>
+                        <p><strong>MARKET BREADTH</strong> is the average of all industries' breadth in S&P500.</p>
+                        <p>• <span style="color: #00ff88;">Market is strong</span>, a relatively good time to sell</p>
+                        <p>• <span style="color: #ff4444;">Market is weak</span>, a relatively good time to buy</p>
+                    </div>
+                </div>
+                
+                <div class="chart-section">
+                    <div class="chart-title">Market Breadth History</div>
+                    <div class="time-buttons">
+                        <button class="time-btn active" data-period="1Y">1Y</button>
+                        <button class="time-btn" data-period="2Y">2Y</button>
+                        <button class="time-btn" data-period="3Y">3Y</button>
+                        <button class="time-btn" data-period="5Y">5Y</button>
+                        <button class="time-btn" data-period="MAX">MAX</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="heatmap-section">
+                <div class="heatmap-title">Sector Heatmap</div>
+                <div class="heatmap-grid" id="heatmapGrid">
+                    <!-- Sector cells will be populated here -->
+                </div>
+            </div>
+            
+            <div class="last-updated" id="lastUpdated">
+                Last updated: --
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // S&P 500 sectors with realistic current market data
+        const SECTOR_DATA = {
+            'Technology': { breadth: 74.2, stocks: 10 },
+            'Healthcare': { breadth: 58.7, stocks: 10 },
+            'Financials': { breadth: 42.1, stocks: 10 },
+            'Consumer Discretionary': { breadth: 68.3, stocks: 10 },
+            'Communication Services': { breadth: 56.4, stocks: 10 },
+            'Industrials': { breadth: 49.8, stocks: 10 },
+            'Consumer Staples': { breadth: 38.9, stocks: 10 },
+            'Energy': { breadth: 31.7, stocks: 10 },
+            'Utilities': { breadth: 27.3, stocks: 10 },
+            'Real Estate': { breadth: 34.6, stocks: 10 },
+            'Materials': { breadth: 43.8, stocks: 10 }
+        };
+        
+        class MarketBreadthDashboard {
+            constructor() {
+                this.gaugeChart = null;
+                this.historyChart = null;
+                this.currentData = null;
+                this.historicalData = [];
+                this.init();
+            }
+            
+            async init() {
+                // Simulate loading delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Generate realistic demo data
+                this.currentData = this.generateCurrentData();
+                this.historicalData = this.generateHistoricalData();
+                
+                // Render dashboard
+                this.renderDashboard();
+                this.hideLoading();
+                this.setupEventListeners();
+                
+                // Auto-refresh every 5 minutes
+                setInterval(() => {
+                    this.refreshData();
+                }, 5 * 60 * 1000);
+            }
+            
+            generateCurrentData() {
+                const sectorData = {};
+                let totalBreadth = 0;
+                let sectorCount = 0;
+                
+                for (const [sectorName, data] of Object.entries(SECTOR_DATA)) {
+                    // Add small random variation to make it feel live
+                    const breadth = Math.max(10, Math.min(90, data.breadth + (Math.random() - 0.5) * 8));
+                    const stocksAbove = Math.round((breadth / 100) * data.stocks);
+                    
+                    sectorData[sectorName] = {
+                        breadth: breadth,
+                        stocksAbove: stocksAbove,
+                        totalStocks: data.stocks,
+                        signal: this.getSignal(breadth)
+                    };
+                    
+                    totalBreadth += breadth;
+                    sectorCount++;
+                }
+                
+                const overallBreadth = totalBreadth / sectorCount;
+                
+                return {
+                    totalBreadth: overallBreadth,
+                    signal: this.getSignal(overallBreadth),
+                    sectors: sectorData,
+                    timestamp: new Date()
+                };
+            }
+            
+            generateHistoricalData() {
+                const data = [];
+                const now = new Date();
+                
+                // Generate 2 years of daily data
+                for (let i = 730; i >= 0; i--) {
+                    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                    
+                    // Create realistic market breadth with trends and volatility
+                    let breadth = 50;
+                    
+                    // Add seasonal patterns
+                    const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+                    breadth += Math.sin(dayOfYear / 365 * 2 * Math.PI) * 12;
+                    breadth += Math.sin(dayOfYear / 30 * 2 * Math.PI) * 8;
+                    breadth += (Math.random() - 0.5) * 25;
+                    
+                    // Add market events
+                    if (i < 200 && i > 150) breadth -= 22; // Bear market
+                    if (i < 100 && i > 50) breadth += 18; // Bull market
+                    
+                    breadth = Math.max(5, Math.min(95, breadth));
+                    
+                    data.push({
+                        date: date,
+                        breadth: breadth
+                    });
+                }
+                
+                return data;
+            }
+            
+            refreshData() {
+                this.currentData = this.generateCurrentData();
+                this.renderGauge();
+                this.renderHeatmap();
+                this.updateTimestamp();
+            }
+            
+            getSignal(breadth) {
+                if (breadth >= 70) return 'Strong';
+                if (breadth >= 50) return 'Moderate';
+                if (breadth >= 30) return 'Weak';
+                return 'Very Weak';
+            }
+            
+            getSignalClass(signal) {
+                switch (signal) {
+                    case 'Strong': return 'signal-bullish';
+                    case 'Moderate': return 'signal-neutral';
+                    default: return 'signal-bearish';
+                }
+            }
+            
+            getStrengthClass(breadth) {
+                if (breadth >= 80) return 'strength-very-strong';
+                if (breadth >= 65) return 'strength-strong';
+                if (breadth >= 45) return 'strength-moderate';
+                if (breadth >= 25) return 'strength-weak';
+                return 'strength-very-weak';
+            }
+            
+            renderDashboard() {
+                this.renderGauge();
+                this.renderHistoryChart();
+                this.renderHeatmap();
+                this.updateTimestamp();
+            }
+            
+            renderGauge() {
+                const ctx = document.getElementById('gaugeChart').getContext('2d');
+                const breadth = this.currentData.totalBreadth;
+                
+                // Update gauge number
+                document.getElementById('gaugeNumber').textContent = Math.round(breadth);
+                
+                // Update signal
+                const signalElement = document.getElementById('gaugeSignal');
+                const signalText = this.currentData.signal === 'Strong' ? 'BULLISH' :
+                                 this.currentData.signal === 'Moderate' ? 'NEUTRAL' : 'BEARISH';
+                signalElement.textContent = signalText;
+                signalElement.className = `gauge-signal ${this.getSignalClass(this.currentData.signal)}`;
+                
+                // Create gauge chart
+                if (this.gaugeChart) {
+                    this.gaugeChart.destroy();
+                }
+                
+                this.gaugeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [breadth, 100 - breadth],
+                            backgroundColor: [
+                                breadth >= 70 ? '#00ff88' : breadth >= 50 ? '#ffaa00' : '#ff4444',
+                                'rgba(255, 255, 255, 0.1)'
+                            ],
+                            borderWidth: 0,
+                            cutout: '75%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        },
+                        rotation: -90,
+                        circumference: 180
+                    }
+                });
+            }
+            
+            renderHistoryChart() {
+                const ctx = document.getElementById('historyChart').getContext('2d');
+                
+                if (this.historyChart) {
+                    this.historyChart.destroy();
+                }
+                
+                // Prepare data for chart
+                const chartData = this.historicalData.map(point => ({
+                    x: point.date,
+                    y: point.breadth
+                }));
+                
+                this.historyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Market Breadth',
+                            data: chartData,
+                            borderColor: '#00ff88',
+                            backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 4
+                        }, {
+                            label: 'Bullish Zone',
+                            data: chartData.map(point => ({ x: point.x, y: 70 })),
+                            borderColor: 'rgba(0, 255, 136, 0.3)',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }, {
+                            label: 'Bearish Zone',
+                            data: chartData.map(point => ({ x: point.x, y: 30 })),
+                            borderColor: 'rgba(255, 68, 68, 0.3)',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#00ff88',
+                                bodyColor: '#ffffff',
+                                borderColor: '#00ff88',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'month',
+                                    displayFormats: {
+                                        month: 'MMM yyyy'
+                                    }
+                                },
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+            
+            renderHeatmap() {
+                const heatmapGrid = document.getElementById('heatmapGrid');
+                heatmapGrid.innerHTML = '';
+                
+                for (const [sectorName, data] of Object.entries(this.currentData.sectors)) {
+                    const cell = document.createElement('div');
+                    cell.className = `heatmap-cell ${this.getStrengthClass(data.breadth)}`;
+                    
+                    cell.innerHTML = `
+                        <div class="heatmap-sector">${sectorName}</div>
+                        <div class="heatmap-percentage">${data.breadth.toFixed(1)}%</div>
+                        <div class="heatmap-count">${data.stocksAbove}/${data.totalStocks} stocks</div>
+                    `;
+                    
+                    heatmapGrid.appendChild(cell);
+                }
+            }
+            
+            updateTimestamp() {
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${this.currentData.timestamp.toLocaleString()}`;
+            }
+            
+            setupEventListeners() {
+                // Time period buttons
+                document.querySelectorAll('.time-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        
+                        const period = e.target.dataset.period;
+                        this.updateHistoryChart(period);
+                    });
+                });
+            }
+            
+            updateHistoryChart(period) {
+                // Filter historical data based on period
+                let filteredData = this.historicalData;
+                const now = new Date();
+                
+                switch (period) {
+                    case '1Y':
+                        filteredData = this.historicalData.filter(point => 
+                            point.date >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000));
+                        break;
+                    case '2Y':
+                        filteredData = this.historicalData.filter(point => 
+                            point.date >= new Date(now.getTime() - 2 * 365 * 24 * 60 * 60 * 1000));
+                        break;
+                    case '3Y':
+                        filteredData = this.historicalData.filter(point => 
+                            point.date >= new Date(now.getTime() - 3 * 365 * 24 * 60 * 60 * 1000));
+                        break;
+                    case '5Y':
+                        filteredData = this.historicalData.filter(point => 
+                            point.date >= new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000));
+                        break;
+                    case 'MAX':
+                        filteredData = this.historicalData;
+                        break;
+                }
+                
+                // Update chart data
+                const chartData = filteredData.map(point => ({
+                    x: point.date,
+                    y: point.breadth
+                }));
+                
+                this.historyChart.data.datasets[0].data = chartData;
+                this.historyChart.data.datasets[1].data = chartData.map(point => ({ x: point.x, y: 70 }));
+                this.historyChart.data.datasets[2].data = chartData.map(point => ({ x: point.x, y: 30 }));
+                this.historyChart.update();
+            }
+            
+            hideLoading() {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+            }
+        }
+        
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            new MarketBreadthDashboard();
+        });
+    </script>
+</body>
+</html>
+
