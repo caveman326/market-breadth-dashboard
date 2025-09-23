@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S&P 500 SMA Breadth Gauge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1a;
+            color: #e0e6ed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .main-container {
+            text-align: center;
+            background: #151823;
+            border: 1px solid #1e2139;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .gauges-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .gauge-container {
+            background: #0f1218;
+            border: 1px solid #1e2139;
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .main-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        
+        .main-subtitle {
+            font-size: 16px;
+            color: #8b92a8;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .gauge-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .gauge-subtitle {
+            font-size: 12px;
+            color: #8b92a8;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .gauge-wrapper {
+            position: relative;
+            width: 240px;
+            height: 120px;
+            margin: 0 auto 20px;
+        }
+        
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .gauge-value {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+        }
+        
+        .gauge-label {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #8b92a8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .gauge-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .marker {
+            position: absolute;
+            font-size: 12px;
+            color: #8b92a8;
+            font-weight: 500;
+        }
+        
+        .marker-0 { bottom: 5px; left: 15px; }
+        .marker-25 { bottom: 30px; left: 2px; }
+        .marker-50 { top: 10px; left: 50%; transform: translateX(-50%); }
+        .marker-75 { bottom: 30px; right: 2px; }
+        .marker-100 { bottom: 5px; right: 15px; }
+        
+        .gauge-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        
+        .stat-item {
+            background: #0f1218;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #8b92a8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .stat-positive { color: #10b981; }
+        .stat-negative { color: #ef4444; }
+        .stat-neutral { color: #f59e0b; }
+        
+        .loading {
+            font-size: 16px;
+            color: #8b92a8;
+            margin: 20px 0;
+        }
+        
+        .error {
+            color: #ef4444;
+            background: #2d1b1b;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .last-updated {
+            font-size: 12px;
+            color: #8b92a8;
+            margin-top: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #1e2139;
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #8b92a8;
+            margin-bottom: 10px;
+        }
+        
+        /* Gauge animation */
+        @keyframes fillGauge {
+            from { stroke-dasharray: 0 628; }
+        }
+        
+        .gauge-fill {
+            animation: fillGauge 2s ease-out;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+            
+            .gauges-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .gauge-wrapper {
+                width: 200px;
+                height: 100px;
+            }
+            
+            .gauge-value {
+                font-size: 28px;
+                bottom: 15px;
+            }
+            
+            .gauge-stats {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="main-title">S&P 500 Market Breadth Analysis</div>
+        <div class="main-subtitle">Multi-Timeframe Market Internals</div>
+        
+        <div id="loadingSection">
+            <div class="progress-text" id="progressText">Initializing...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="loading" id="loadingText">Loading S&P 500 market breadth...</div>
+        </div>
+        
+        <div id="errorText" class="error" style="display: none;"></div>
+        
+        <div class="gauges-grid" id="gaugesGrid" style="display: none;">
+            <!-- Day-of Breadth Gauge -->
+            <div class="gauge-container">
+                <div class="gauge-title">Day-of Breadth</div>
+                <div class="gauge-subtitle">Stocks Up Today</div>
+                
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg" viewBox="0 0 240 120">
+                        <path d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#1e2139" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-linecap="round"/>
+                        <path id="dayOfFill" 
+                              d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#10b981" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-dasharray="0 283"
+                              stroke-linecap="round"
+                              class="gauge-fill"/>
+                    </svg>
+                    
+                    <div class="gauge-markers">
+                        <div class="marker marker-0">0</div>
+                        <div class="marker marker-25">25</div>
+                        <div class="marker marker-50">50</div>
+                        <div class="marker marker-75">75</div>
+                        <div class="marker marker-100">100</div>
+                    </div>
+                    
+                    <div class="gauge-value" id="dayOfValue">--</div>
+                    <div class="gauge-label">Percent Up</div>
+                </div>
+                
+                <div class="gauge-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Up</div>
+                        <div class="stat-value stat-positive" id="dayOfUp">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Down</div>
+                        <div class="stat-value stat-negative" id="dayOfDown">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 10-Day SMA Breadth Gauge -->
+            <div class="gauge-container">
+                <div class="gauge-title">10-Day SMA Breadth</div>
+                <div class="gauge-subtitle">Stocks Above 10-Day SMA</div>
+                
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg" viewBox="0 0 240 120">
+                        <path d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#1e2139" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-linecap="round"/>
+                        <path id="sma10Fill" 
+                              d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#10b981" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-dasharray="0 283"
+                              stroke-linecap="round"
+                              class="gauge-fill"/>
+                    </svg>
+                    
+                    <div class="gauge-markers">
+                        <div class="marker marker-0">0</div>
+                        <div class="marker marker-25">25</div>
+                        <div class="marker marker-50">50</div>
+                        <div class="marker marker-75">75</div>
+                        <div class="marker marker-100">100</div>
+                    </div>
+                    
+                    <div class="gauge-value" id="sma10Value">--</div>
+                    <div class="gauge-label">Percent Above</div>
+                </div>
+                
+                <div class="gauge-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Above</div>
+                        <div class="stat-value stat-positive" id="sma10Above">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Below</div>
+                        <div class="stat-value stat-negative" id="sma10Below">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 20-Day SMA Breadth Gauge -->
+            <div class="gauge-container">
+                <div class="gauge-title">20-Day SMA Breadth</div>
+                <div class="gauge-subtitle">Stocks Above 20-Day SMA</div>
+                
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg" viewBox="0 0 240 120">
+                        <path d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#1e2139" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-linecap="round"/>
+                        <path id="sma20Fill" 
+                              d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#10b981" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-dasharray="0 283"
+                              stroke-linecap="round"
+                              class="gauge-fill"/>
+                    </svg>
+                    
+                    <div class="gauge-markers">
+                        <div class="marker marker-0">0</div>
+                        <div class="marker marker-25">25</div>
+                        <div class="marker marker-50">50</div>
+                        <div class="marker marker-75">75</div>
+                        <div class="marker marker-100">100</div>
+                    </div>
+                    
+                    <div class="gauge-value" id="sma20Value">--</div>
+                    <div class="gauge-label">Percent Above</div>
+                </div>
+                
+                <div class="gauge-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Above</div>
+                        <div class="stat-value stat-positive" id="sma20Above">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Below</div>
+                        <div class="stat-value stat-negative" id="sma20Below">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 200-Day SMA Breadth Gauge -->
+            <div class="gauge-container">
+                <div class="gauge-title">200-Day SMA Breadth</div>
+                <div class="gauge-subtitle">Stocks Above 200-Day SMA</div>
+                
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg" viewBox="0 0 240 120">
+                        <path d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#1e2139" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-linecap="round"/>
+                        <path id="sma200Fill" 
+                              d="M 30 90 A 90 90 0 0 1 210 90" 
+                              stroke="#10b981" 
+                              stroke-width="18" 
+                              fill="none"
+                              stroke-dasharray="0 283"
+                              stroke-linecap="round"
+                              class="gauge-fill"/>
+                    </svg>
+                    
+                    <div class="gauge-markers">
+                        <div class="marker marker-0">0</div>
+                        <div class="marker marker-25">25</div>
+                        <div class="marker marker-50">50</div>
+                        <div class="marker marker-75">75</div>
+                        <div class="marker marker-100">100</div>
+                    </div>
+                    
+                    <div class="gauge-value" id="sma200Value">--</div>
+                    <div class="gauge-label">Percent Above</div>
+                </div>
+                
+                <div class="gauge-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Above</div>
+                        <div class="stat-value stat-positive" id="sma200Above">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Below</div>
+                        <div class="stat-value stat-negative" id="sma200Below">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="last-updated" id="lastUpdated" style="display: none;"></div>
+    </div>
+
+    <script>
+        class BreadthAnalyzer {
+            constructor() {
+                this.proxyUrl = '/.netlify/functions/polygon-proxy';
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    console.log('Fetching comprehensive S&P 500 breadth data...');
+                    document.getElementById('loadingText').textContent = 'Loading comprehensive breadth analysis...';
+                    document.getElementById('progressText').textContent = 'Connecting to server...';
+                    document.getElementById('progressFill').style.width = '50%';
+                    
+                    // FIXED: Remove /breadth from the URL - just call the function directly
+                    const response = await fetch(this.proxyUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    this.data = await response.json();
+                    
+                    if (this.data.error) {
+                        throw new Error(this.data.error);
+                    }
+                    
+                    console.log('Breadth data loaded:', this.data);
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('progressText').textContent = 'Analysis complete!';
+                    
+                    this.updateAllGauges();
+                    this.hideLoading();
+                    
+                } catch (error) {
+                    console.error('Failed to fetch breadth data:', error);
+                    this.showError(`Failed to load S&P 500 breadth data: ${error.message}`);
+                    this.hideLoading();
+                }
+            }
+            
+            updateAllGauges() {
+                // Update all 4 gauges
+                this.updateGauge('dayOf', this.data.dayOf, 'dayOfFill', 'dayOfValue', 'dayOfUp', 'dayOfDown');
+                this.updateGauge('sma10', this.data.sma10, 'sma10Fill', 'sma10Value', 'sma10Above', 'sma10Below');
+                this.updateGauge('sma20', this.data.sma20, 'sma20Fill', 'sma20Value', 'sma20Above', 'sma20Below');
+                this.updateGauge('sma200', this.data.sma200, 'sma200Fill', 'sma200Value', 'sma200Above', 'sma200Below');
+                
+                // Show gauges
+                document.getElementById('gaugesGrid').style.display = 'grid';
+                
+                // Update timestamp with cache status
+                if (this.data.timestamp) {
+                    const dataDate = new Date(this.data.timestamp);
+                    const timeString = dataDate.toLocaleString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZoneName: 'short'
+                    });
+                    
+                    let statusText = `Last updated: ${timeString} | Total analyzed: ${this.data.total} stocks`;
+                    if (this.data.cached && this.data.cacheAge !== undefined) {
+                        const remainingMinutes = Math.max(0, 60 - this.data.cacheAge);
+                        statusText += ` (cached, refreshes in ${remainingMinutes} min)`;
+                    } else if (!this.data.cached) {
+                        statusText += ' (fresh data)';
+                    }
+                    
+                    document.getElementById('lastUpdated').textContent = statusText;
+                    document.getElementById('lastUpdated').style.display = 'block';
+                }
+            }
+            
+            updateGauge(type, data, fillId, valueId, aboveId, belowId) {
+                const percentage = data.percentage;
+                
+                // Update gauge value
+                document.getElementById(valueId).textContent = percentage;
+                
+                // Update gauge fill
+                const fillPath = document.getElementById(fillId);
+                
+                // Calculate stroke-dasharray for percentage (semicircle = ~283 total length for smaller gauges)
+                const circumference = 283;
+                const fillLength = (percentage / 100) * circumference;
+                fillPath.style.strokeDasharray = `${fillLength} ${circumference}`;
+                
+                // Color based on percentage and type
+                let color = this.getGaugeColor(percentage, type);
+                fillPath.style.stroke = color;
+                
+                // Update stats based on gauge type
+                if (type === 'dayOf') {
+                    document.getElementById(aboveId).textContent = data.up;
+                    document.getElementById(belowId).textContent = data.down;
+                } else {
+                    document.getElementById(aboveId).textContent = data.above;
+                    document.getElementById(belowId).textContent = data.below;
+                }
+            }
+            
+            getGaugeColor(percentage, type) {
+                // Different thresholds for different timeframes
+                if (type === 'dayOf') {
+                    // Day-of breadth: 50% is neutral
+                    if (percentage >= 60) return '#10b981'; // Green
+                    if (percentage >= 40) return '#f59e0b'; // Yellow
+                    return '#ef4444'; // Red
+                } else if (type === 'sma200') {
+                    // 200-day SMA: Lower thresholds (bear/bull market indicator)
+                    if (percentage >= 60) return '#10b981'; // Green
+                    if (percentage >= 40) return '#f59e0b'; // Yellow
+                    return '#ef4444'; // Red
+                } else {
+                    // 10/20-day SMAs: Standard thresholds
+                    if (percentage >= 70) return '#10b981'; // Green
+                    if (percentage >= 50) return '#f59e0b'; // Yellow
+                    return '#ef4444'; // Red
+                }
+            }
+            
+            showError(message) {
+                document.getElementById('errorText').textContent = message;
+                document.getElementById('errorText').style.display = 'block';
+            }
+            
+            hideLoading() {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new BreadthAnalyzer();
+        });
+    </script>
+</body>
+</html>
