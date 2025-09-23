@@ -1,11 +1,9 @@
 // netlify/functions/polygon-proxy.js
-// Smart function that auto-collects historical data on first run
+// Simplified version that works without timeouts
 
 // Global cache to store SMA data (persists across function calls)
 let cachedSMAData = null;
 let cacheTimestamp = null;
-let historicalData = [];
-let historicalDataLoaded = false;
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 // Complete S&P 500 stock list
@@ -62,23 +60,6 @@ const SP500_SYMBOLS = [
   'WSM', 'WMB', 'WTW', 'WDAY', 'WYNN', 'XEL', 'XYL', 'YUM', 'ZBRA', 'ZBH', 'ZTS'
 ];
 
-// Generate array of last 30 trading days (for initial historical data)
-function getLast30TradingDays() {
-  const days = [];
-  const today = new Date();
-  let currentDate = new Date(today);
-  
-  while (days.length < 30) {
-    // Skip weekends
-    if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-      days.push(currentDate.toISOString().split('T')[0]);
-    }
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-  
-  return days.reverse(); // Oldest to newest
-}
-
 // Helper function to fetch comprehensive stock data for all breadth calculations
 async function fetchStockData(symbol, apiKey) {
   try {
@@ -122,121 +103,6 @@ async function fetchStockData(symbol, apiKey) {
     console.error(`Error fetching ${symbol}:`, error);
     return null;
   }
-}
-
-// Calculate breadth for a specific date (for historical data)
-async function calculateBreadthForDate(date, apiKey) {
-  console.log(`Calculating breadth for ${date}...`);
-  
-  let dayOfUp = 0, sma10Above = 0, sma20Above = 0, sma200Above = 0;
-  let totalValid = 0;
-  
-  // Get data for all stocks on this date (smaller batches for historical)
-  const batchSize = 10;
-  const batches = [];
-  
-  for (let i = 0; i < SP500_SYMBOLS.length; i += batchSize) {
-    batches.push(SP500_SYMBOLS.slice(i, i + batchSize));
-  }
-  
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    
-    const promises = batch.map(async (symbol) => {
-      try {
-        // Get 250 days of data ending on this date to calculate SMAs
-        const startDate = new Date(date);
-        startDate.setDate(startDate.getDate() - 250);
-        const startDateStr = startDate.toISOString().split('T')[0];
-        
-        const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDateStr}/${date}?adjusted=true&sort=desc&limit=250&apikey=${apiKey}`;
-        
-        const response = await fetch(url);
-        if (!response.ok) return null;
-        
-        const data = await response.json();
-        if (!data.results || data.results.length < 201) return null;
-        
-        const prices = data.results.map(day => day.c);
-        const currentPrice = prices[0];
-        const previousClose = prices[1];
-        
-        // Calculate SMAs
-        const sma10 = prices.slice(0, 10).reduce((sum, price) => sum + price, 0) / 10;
-        const sma20 = prices.slice(0, 20).reduce((sum, price) => sum + price, 0) / 20;
-        const sma200 = prices.slice(0, 200).reduce((sum, price) => sum + price, 0) / 200;
-        
-        return {
-          dayOf: currentPrice > previousClose,
-          aboveSMA10: currentPrice > sma10,
-          aboveSMA20: currentPrice > sma20,
-          aboveSMA200: currentPrice > sma200
-        };
-        
-      } catch (error) {
-        return null;
-      }
-    });
-    
-    const results = await Promise.allSettled(promises);
-    
-    results.forEach((result) => {
-      if (result.status === 'fulfilled' && result.value !== null) {
-        const stockData = result.value;
-        totalValid++;
-        
-        if (stockData.dayOf) dayOfUp++;
-        if (stockData.aboveSMA10) sma10Above++;
-        if (stockData.aboveSMA20) sma20Above++;
-        if (stockData.aboveSMA200) sma200Above++;
-      }
-    });
-    
-    // Rate limiting for historical data collection
-    if (batchIndex < batches.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
-  
-  return {
-    date,
-    dayOf: totalValid > 0 ? Math.round((dayOfUp / totalValid) * 100) : 0,
-    sma10: totalValid > 0 ? Math.round((sma10Above / totalValid) * 100) : 0,
-    sma20: totalValid > 0 ? Math.round((sma20Above / totalValid) * 100) : 0,
-    sma200: totalValid > 0 ? Math.round((sma200Above / totalValid) * 100) : 0,
-    totalStocks: totalValid
-  };
-}
-
-// Initialize historical data (runs once on first deployment)
-async function initializeHistoricalData(apiKey) {
-  if (historicalDataLoaded && historicalData.length > 0) {
-    return historicalData;
-  }
-  
-  console.log('Initializing historical breadth data (first time setup)...');
-  console.log('This will take a few minutes but only happens once.');
-  
-  const tradingDays = getLast30TradingDays(); // Start with 30 days for faster initial setup
-  const newHistoricalData = [];
-  
-  for (let i = 0; i < tradingDays.length; i++) {
-    const date = tradingDays[i];
-    console.log(`Historical progress: ${i + 1}/${tradingDays.length} (${Math.round((i + 1) / tradingDays.length * 100)}%)`);
-    
-    try {
-      const breadthData = await calculateBreadthForDate(date, apiKey);
-      newHistoricalData.push(breadthData);
-    } catch (error) {
-      console.error(`Failed to get historical data for ${date}:`, error);
-    }
-  }
-  
-  historicalData = newHistoricalData;
-  historicalDataLoaded = true;
-  
-  console.log(`Historical data initialized with ${historicalData.length} days`);
-  return historicalData;
 }
 
 // Main function to calculate all breadth data
@@ -290,7 +156,7 @@ async function calculateBreadthData(apiKey) {
   const sma20Percentage = totalValid > 0 ? Math.round((sma20Above / totalValid) * 100) : 0;
   const sma200Percentage = totalValid > 0 ? Math.round((sma200Above / totalValid) * 100) : 0;
   
-  const breadthData = {
+  return {
     dayOf: {
       up: dayOfUp,
       down: totalValid - dayOfUp,
@@ -313,32 +179,10 @@ async function calculateBreadthData(apiKey) {
     },
     total: totalValid,
     timestamp: new Date().toISOString(),
-    processed
+    processed,
+    // Empty historical data for now (will add chart later)
+    historical: []
   };
-  
-  // Update historical data with today's breadth
-  const today = new Date().toISOString().split('T')[0];
-  const existingIndex = historicalData.findIndex(entry => entry.date === today);
-  
-  const todayData = {
-    date: today,
-    dayOf: dayOfPercentage,
-    sma10: sma10Percentage,
-    sma20: sma20Percentage,
-    sma200: sma200Percentage,
-    totalStocks: totalValid
-  };
-  
-  if (existingIndex >= 0) {
-    historicalData[existingIndex] = todayData;
-  } else {
-    historicalData.push(todayData);
-  }
-  
-  // Keep only last 200 days
-  historicalData = historicalData.slice(-200);
-  
-  return breadthData;
 }
 
 exports.handler = async (event, context) => {
@@ -378,11 +222,6 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Initialize historical data if needed (first time only)
-    if (!historicalDataLoaded) {
-      await initializeHistoricalData(apiKey);
-    }
-    
     // Check if we have valid cached data
     const now = Date.now();
     const isCacheValid = cachedSMAData && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION_MS);
@@ -398,7 +237,6 @@ exports.handler = async (event, context) => {
         },
         body: JSON.stringify({
           ...cachedSMAData,
-          historical: historicalData,
           cached: true,
           cacheAge: Math.round((now - cacheTimestamp) / 1000 / 60) // minutes
         })
@@ -422,7 +260,6 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         ...breadthData,
-        historical: historicalData,
         cached: false
       })
     };
