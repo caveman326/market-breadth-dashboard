@@ -465,39 +465,32 @@
                     document.getElementById('progressText').textContent = 'Connecting to server...';
                     document.getElementById('progressFill').style.width = '50%';
                     
+                    // FIXED: Remove /breadth from the URL - just call the function directly
                     const response = await fetch(this.proxyUrl);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
-                    const data = await response.json();
+                    this.data = await response.json();
                     
-                    if (data.error) {
-                        throw new Error(data.error);
+                    if (this.data.error) {
+                        throw new Error(this.data.error);
                     }
                     
-                    this.data = {
-                        dayOf: data.dayOf,
-                        sma10: data.sma10,
-                        sma20: data.sma20,
-                        sma200: data.sma200,
-                        total: data.total,
-                        timestamp: data.timestamp,
-                        cached: data.cached,
-                        cacheAge: data.cacheAge
-                    };
+                    console.log('Breadth data loaded:', this.data);
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('progressText').textContent = 'Analysis complete!';
                     
                     this.updateAllGauges();
                     this.hideLoading();
                     
                 } catch (error) {
-                    console.error('Failed to fetch data:', error);
-                    this.showError('Failed to load S&P 500 breadth data. This may be due to API rate limits or network issues. Please try again in a few minutes.');
+                    console.error('Failed to fetch breadth data:', error);
+                    this.showError(`Failed to load S&P 500 breadth data: ${error.message}`);
                     this.hideLoading();
                 }
             }
-            
             
             updateAllGauges() {
                 // Update all 4 gauges
