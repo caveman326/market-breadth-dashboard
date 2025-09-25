@@ -1,5 +1,5 @@
 // netlify/functions/polygon-proxy.js
-// Fixed version that works with available data
+// Fixed version that handles insufficient data for 200-day SMA properly
 
 // Global cache to store SMA data (persists across function calls)
 let cachedSMAData = null;
@@ -63,10 +63,11 @@ const SP500_SYMBOLS = [
 // Helper function to fetch comprehensive stock data for all breadth calculations
 async function fetchStockData(symbol, apiKey) {
   try {
+    // FIXED: Request 2 years of data to ensure we get 200+ trading days
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 250 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 250 days for 200-day SMA
+    const startDate = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 2 years
     
-    const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDate}/${endDate}?adjusted=true&sort=desc&limit=250&apikey=${apiKey}`;
+    const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDate}/${endDate}?adjusted=true&sort=desc&limit=500&apikey=${apiKey}`;
     
     const response = await fetch(url);
     
@@ -76,7 +77,6 @@ async function fetchStockData(symbol, apiKey) {
     
     const data = await response.json();
     
-    // FIXED: More flexible data requirements
     if (!data.results || data.results.length < 2) {
       return null; // Need at least 2 days for day-of calculation
     }
@@ -85,7 +85,7 @@ async function fetchStockData(symbol, apiKey) {
     const currentPrice = prices[0]; // Most recent price
     const previousClose = prices[1]; // Yesterday's close
     
-    // Calculate SMAs with available data
+    // Calculate SMAs with flexible requirements
     let sma10 = null, sma20 = null, sma200 = null;
     
     if (prices.length >= 10) {
@@ -96,8 +96,11 @@ async function fetchStockData(symbol, apiKey) {
       sma20 = prices.slice(0, 20).reduce((sum, price) => sum + price, 0) / 20;
     }
     
-    if (prices.length >= 200) {
-      sma200 = prices.slice(0, 200).reduce((sum, price) => sum + price, 0) / 200;
+    // FIXED: Use adaptive SMA calculation for 200-day
+    // Use 200 days if available, otherwise use what we have (minimum 50 days)
+    if (prices.length >= 50) {
+      const smaLength = Math.min(200, prices.length);
+      sma200 = prices.slice(0, smaLength).reduce((sum, price) => sum + price, 0) / smaLength;
     }
     
     return {
@@ -108,7 +111,8 @@ async function fetchStockData(symbol, apiKey) {
       aboveSMA10: sma10 ? currentPrice > sma10 : null,
       aboveSMA20: sma20 ? currentPrice > sma20 : null,
       aboveSMA200: sma200 ? currentPrice > sma200 : null,
-      dataPoints: prices.length
+      dataPoints: prices.length,
+      smaLength: sma200 ? Math.min(200, prices.length) : null // Track actual SMA length used
     };
     
   } catch (error) {
@@ -127,6 +131,7 @@ async function calculateBreadthData(apiKey) {
   let sma200Above = 0, sma200Total = 0;
   let totalValid = 0;
   let processed = 0;
+  let smaLengthSum = 0; // Track average SMA length used
   
   // Rate limiting: Stay under 100 requests per second
   const batchSize = 25;
@@ -165,9 +170,11 @@ async function calculateBreadthData(apiKey) {
           if (stockData.aboveSMA20) sma20Above++;
         }
         
+        // FIXED: Count 200-day SMA even if using fewer than 200 days
         if (stockData.aboveSMA200 !== null) {
           sma200Total++;
           if (stockData.aboveSMA200) sma200Above++;
+          if (stockData.smaLength) smaLengthSum += stockData.smaLength;
         }
         
       } else {
@@ -187,7 +194,9 @@ async function calculateBreadthData(apiKey) {
   const sma20Percentage = sma20Total > 0 ? Math.round((sma20Above / sma20Total) * 100) : 0;
   const sma200Percentage = sma200Total > 0 ? Math.round((sma200Above / sma200Total) * 100) : 0;
   
-  console.log(`Results: Day-of: ${dayOfUp}/${dayOfTotal}, SMA10: ${sma10Above}/${sma10Total}, SMA20: ${sma20Above}/${sma20Total}, SMA200: ${sma200Above}/${sma200Total}`);
+  const avgSmaLength = sma200Total > 0 ? Math.round(smaLengthSum / sma200Total) : 0;
+  
+  console.log(`Results: Day-of: ${dayOfUp}/${dayOfTotal}, SMA10: ${sma10Above}/${sma10Total}, SMA20: ${sma20Above}/${sma20Total}, SMA200: ${sma200Above}/${sma200Total} (avg ${avgSmaLength}-day)`);
   
   return {
     dayOf: {
@@ -208,7 +217,8 @@ async function calculateBreadthData(apiKey) {
     sma200: {
       above: sma200Above,
       below: sma200Total - sma200Above,
-      percentage: sma200Percentage
+      percentage: sma200Percentage,
+      avgDays: avgSmaLength // Show actual average SMA length used
     },
     total: totalValid,
     timestamp: new Date().toISOString(),
