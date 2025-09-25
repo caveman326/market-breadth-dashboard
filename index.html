@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S&P 500 Breadth Dashboard</title>
+    <title>Market Health Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -21,35 +21,261 @@
         }
         
         .dashboard {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: grid;
             gap: 20px;
         }
         
-        .gauge-container {
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #1e2139;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #151823;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-open .status-dot { background: #10b981; }
+        .status-closed .status-dot { background: #8b92a8; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Market Indices Section - Hero */
+        .indices-section {
+            background: linear-gradient(135deg, #151823 0%, #1a1f2e 100%);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid #1e2139;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-subtitle {
+            font-size: 12px;
+            color: #8b92a8;
+            font-weight: 400;
+        }
+        
+        .indices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .index-card {
+            background: #0f1218;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .index-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .index-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--card-color) 0%, transparent 100%);
+        }
+        
+        .spy-card { --card-color: #3b82f6; }
+        .qqq-card { --card-color: #8b5cf6; }
+        .iwm-card { --card-color: #f59e0b; }
+        .vix-card { --card-color: #ef4444; }
+        
+        .index-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .index-symbol {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        
+        .index-name {
+            font-size: 11px;
+            color: #8b92a8;
+            text-transform: uppercase;
+        }
+        
+        .index-price {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+        
+        .index-changes {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .change-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .change-label {
+            font-size: 10px;
+            color: #8b92a8;
+            text-transform: uppercase;
+        }
+        
+        .change-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .neutral { color: #f59e0b; }
+        
+        .index-sparkline {
+            height: 40px;
+            margin-top: 12px;
+            opacity: 0.7;
+        }
+        
+        .relative-performance {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid #1e2139;
+            font-size: 12px;
+        }
+        
+        .vs-spy {
+            color: #8b92a8;
+        }
+        
+        .vs-spy-value {
+            font-weight: 600;
+        }
+        
+        /* Market Regime Box */
+        .regime-box {
+            background: #0f1218;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .regime-label {
+            font-size: 12px;
+            color: #8b92a8;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .regime-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .regime-risk-on { color: #10b981; }
+        .regime-risk-off { color: #ef4444; }
+        .regime-mixed { color: #f59e0b; }
+        
+        .regime-signals {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .signal {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .signal.bullish {
+            background: #064e3b;
+            color: #10b981;
+        }
+        
+        .signal.bearish {
+            background: #7f1d1d;
+            color: #ef4444;
+        }
+        
+        .signal.extreme {
+            background: #78350f;
+            color: #f59e0b;
+        }
+        
+        .signal.complacent {
+            background: #1e3a8a;
+            color: #60a5fa;
+        }
+        
+        /* Breadth Section */
+        .breadth-section {
             background: #151823;
             border: 1px solid #1e2139;
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .gauge-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .gauge-subtitle {
-            font-size: 14px;
-            color: #8b92a8;
-            margin-bottom: 30px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .gauges-grid {
@@ -96,6 +322,7 @@
             letter-spacing: 1px;
         }
         
+        /* Chart Section */
         .chart-container {
             background: #151823;
             border: 1px solid #1e2139;
@@ -118,6 +345,7 @@
             height: 320px;
         }
         
+        /* Stats Grid */
         .stats-container {
             background: #151823;
             border: 1px solid #1e2139;
@@ -156,6 +384,7 @@
         .stat-negative { color: #ef4444; }
         .stat-neutral { color: #f59e0b; }
         
+        /* Loading & Error States */
         .loading {
             text-align: center;
             padding: 40px;
@@ -169,13 +398,6 @@
             border-radius: 8px;
             margin: 20px 0;
             text-align: center;
-        }
-        
-        .last-updated {
-            font-size: 12px;
-            color: #8b92a8;
-            text-align: center;
-            margin-top: 20px;
         }
         
         .retry-button {
@@ -193,6 +415,13 @@
             background: #2563eb;
         }
         
+        .last-updated {
+            font-size: 12px;
+            color: #8b92a8;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
         @keyframes fillGauge {
             from { stroke-dasharray: 0 628; }
         }
@@ -202,6 +431,7 @@
         }
         
         @media (max-width: 768px) {
+            .indices-grid,
             .gauges-grid {
                 grid-template-columns: 1fr;
             }
@@ -214,9 +444,38 @@
 </head>
 <body>
     <div class="dashboard">
-        <div class="gauge-container">
-            <div class="gauge-title">S&P 500 Market Breadth Dashboard</div>
-            <div class="gauge-subtitle">Real-Time Market Participation Analysis</div>
+        <div class="header">
+            <div class="title">Market Health Dashboard</div>
+            <div id="marketStatus" class="market-status status-closed">
+                <span class="status-dot"></span>
+                <span id="statusText">Markets Closed</span>
+            </div>
+        </div>
+        
+        <!-- Market Indices Section - Primary -->
+        <div class="indices-section" id="indicesSection">
+            <div class="section-title">
+                Market Indices 
+                <span class="section-subtitle">Real-time market regime analysis</span>
+            </div>
+            
+            <div class="indices-grid" id="indicesGrid">
+                <div class="loading">Loading market indices...</div>
+            </div>
+            
+            <div class="regime-box" id="regimeBox" style="display: none;">
+                <div class="regime-label">Market Regime</div>
+                <div id="regimeValue" class="regime-value">--</div>
+                <div class="regime-signals" id="regimeSignals"></div>
+            </div>
+        </div>
+        
+        <!-- Breadth Indicators Section - Secondary -->
+        <div class="breadth-section">
+            <div class="section-title">
+                S&P 500 Breadth Indicators
+                <span class="section-subtitle">Market participation metrics</span>
+            </div>
             
             <div class="gauges-grid">
                 <div class="single-gauge">
@@ -308,8 +567,8 @@
                 </div>
             </div>
             
-            <div id="loadingSection" class="loading">
-                Loading S&P 500 breadth data...
+            <div id="loadingBreadth" class="loading" style="display: none;">
+                Loading breadth data...
             </div>
             
             <div id="errorSection" class="error" style="display: none;">
@@ -318,14 +577,14 @@
             </div>
         </div>
         
-        <div class="chart-container" id="chartContainer" style="display: none;">
-            <div class="chart-title">30-Day Historical Breadth Trends</div>
+        <div class="chart-container" id="chartContainer">
+            <div class="chart-title">Historical Breadth Trends</div>
             <div class="chart-wrapper">
                 <canvas id="breadthChart"></canvas>
             </div>
         </div>
         
-        <div class="stats-container" id="statsContainer" style="display: none;">
+        <div class="stats-container" id="statsContainer">
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-label">Day-of Up</div>
@@ -344,8 +603,8 @@
                     <div class="stat-value stat-positive" id="above200Count">--</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Market Regime</div>
-                    <div class="stat-value" id="marketRegime">--</div>
+                    <div class="stat-label">Breadth Status</div>
+                    <div class="stat-value" id="breadthStatus">--</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-label">Total Analyzed</div>
@@ -358,16 +617,13 @@
     </div>
 
     <script>
-        class BreadthDashboard {
+        class MarketDashboard {
             constructor() {
                 this.proxyUrl = '/.netlify/functions/polygon-proxy';
                 
-                this.currentData = {
-                    dayOf: { up: 0, percentage: 0 },
-                    sma10: { above: 0, percentage: 0 },
-                    sma20: { above: 0, percentage: 0 },
-                    sma200: { above: 0, percentage: 0 },
-                    total: 0
+                this.marketData = {
+                    indices: null,
+                    breadth: null
                 };
                 
                 this.historicalData = this.loadHistoricalData();
@@ -377,199 +633,418 @@
             }
             
             async init() {
+                this.updateMarketStatus();
+                
                 try {
-                    await this.fetchBreadthData();
-                    this.updateDashboard();
-                    this.createChart();
-                    this.saveHistoricalData();
-                    this.hideLoading();
-                    this.showContent();
+                    // Fetch all data using the 'all' endpoint
+                    await this.fetchAllData();
+                    
+                    // Auto-refresh during market hours
+                    if (this.isMarketHours()) {
+                        // Refresh indices every 5 minutes
+                        setInterval(() => this.fetchIndicesData(), 5 * 60 * 1000);
+                        // Refresh breadth every hour
+                        setInterval(() => this.fetchBreadthData(), 60 * 60 * 1000);
+                    }
                 } catch (error) {
                     console.error('Dashboard initialization error:', error);
                     this.showError(error.message);
-                    this.hideLoading();
+                }
+            }
+            
+            async fetchAllData() {
+                try {
+                    const response = await fetch(`${this.proxyUrl}?type=all`);
+                    
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Dashboard must be deployed to Netlify to access live market data');
+                        }
+                        throw new Error(`Failed to fetch market data: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Process indices data
+                    if (data.indices) {
+                        this.marketData.indices = data.indices;
+                        this.updateIndicesDisplay();
+                    }
+                    
+                    // Process breadth data - handle both nested and direct structure
+                    const breadthData = data.breadth || data;
+                    if (breadthData && breadthData.dayOf) {
+                        this.marketData.breadth = breadthData;
+                        this.updateBreadthDisplay();
+                    }
+                    
+                    this.updateTimestamp();
+                    
+                } catch (error) {
+                    console.error('Data fetch error:', error);
+                    this.showError(error.message);
+                }
+            }
+            
+            async fetchIndicesData() {
+                try {
+                    const response = await fetch(`${this.proxyUrl}?type=indices`);
+                    const data = await response.json();
+                    
+                    if (!data.error && data.indices) {
+                        this.marketData.indices = data.indices;
+                        this.updateIndicesDisplay();
+                    }
+                } catch (error) {
+                    console.error('Indices refresh error:', error);
                 }
             }
             
             async fetchBreadthData() {
-                const response = await fetch(this.proxyUrl);
-                
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Dashboard must be deployed to Netlify to access live market data. This preview shows the interface only.');
+                try {
+                    const response = await fetch(`${this.proxyUrl}?type=breadth`);
+                    const data = await response.json();
+                    
+                    if (!data.error && data.breadth) {
+                        this.marketData.breadth = data.breadth;
+                        this.updateBreadthDisplay();
                     }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                } catch (error) {
+                    console.error('Breadth refresh error:', error);
                 }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Update with real API data
-                this.currentData = {
-                    dayOf: {
-                        up: data.dayOf.up,
-                        percentage: data.dayOf.percentage
-                    },
-                    sma10: {
-                        above: data.sma10.above,
-                        percentage: data.sma10.percentage
-                    },
-                    sma20: {
-                        above: data.sma20.above,
-                        percentage: data.sma20.percentage
-                    },
-                    sma200: {
-                        above: data.sma200.above,
-                        percentage: data.sma200.percentage
-                    },
-                    total: data.dayOf.up + data.dayOf.down
-                };
             }
             
-            updateDashboard() {
-                // Update all 4 gauges
-                this.updateGauge('gaugeDay', this.currentData.dayOf.percentage, '#8b5cf6');
-                this.updateGauge('gauge10', this.currentData.sma10.percentage, '#10b981');
-                this.updateGauge('gauge20', this.currentData.sma20.percentage, '#f59e0b');
-                this.updateGauge('gauge200', this.currentData.sma200.percentage, '#3b82f6');
+            updateIndicesDisplay() {
+                const indices = this.marketData.indices;
+                if (!indices) return;
+                
+                const grid = document.getElementById('indicesGrid');
+                grid.innerHTML = '';
+                
+                // SPY Card
+                if (indices.spy) {
+                    grid.innerHTML += this.createIndexCard('SPY', 'S&P 500', indices.spy, 'spy-card');
+                }
+                
+                // QQQ Card with relative performance
+                if (indices.qqq && indices.spy) {
+                    const relPerf = (parseFloat(indices.qqq.weekChange) - parseFloat(indices.spy.weekChange)).toFixed(1);
+                    grid.innerHTML += this.createIndexCard('QQQ', 'Nasdaq 100', indices.qqq, 'qqq-card', relPerf);
+                }
+                
+                // IWM Card with relative performance
+                if (indices.iwm && indices.spy) {
+                    const relPerf = (parseFloat(indices.iwm.weekChange) - parseFloat(indices.spy.weekChange)).toFixed(1);
+                    grid.innerHTML += this.createIndexCard('IWM', 'Russell 2000', indices.iwm, 'iwm-card', relPerf);
+                }
+                
+                // VIX Card (special formatting)
+                if (indices.vix) {
+                    grid.innerHTML += this.createVixCard(indices.vix);
+                }
+                
+                // Update regime analysis
+                if (indices.analysis) {
+                    this.updateRegimeAnalysis(indices.analysis);
+                }
+                
+                // Create sparklines after DOM updates
+                setTimeout(() => {
+                    if (indices.spy) this.createSparkline('spy-spark', indices.spy.sparkline, '#3b82f6');
+                    if (indices.qqq) this.createSparkline('qqq-spark', indices.qqq.sparkline, '#8b5cf6');
+                    if (indices.iwm) this.createSparkline('iwm-spark', indices.iwm.sparkline, '#f59e0b');
+                    if (indices.vix) this.createSparkline('vix-spark', indices.vix.sparkline, '#ef4444');
+                }, 100);
+            }
+            
+            createIndexCard(symbol, name, data, className, relativePerf = null) {
+                const dayClass = parseFloat(data.dayChange) >= 0 ? 'positive' : 'negative';
+                const weekClass = parseFloat(data.weekChange) >= 0 ? 'positive' : 'negative';
+                const monthClass = parseFloat(data.monthChange) >= 0 ? 'positive' : 'negative';
+                
+                let relPerfHtml = '';
+                if (relativePerf !== null) {
+                    const perfClass = parseFloat(relativePerf) >= 0 ? 'positive' : 'negative';
+                    const perfLabel = parseFloat(relativePerf) >= 0 ? 'Outperforming' : 'Underperforming';
+                    relPerfHtml = `
+                        <div class="relative-performance">
+                            <span class="vs-spy">vs SPY</span>
+                            <span class="vs-spy-value ${perfClass}">${relativePerf > 0 ? '+' : ''}${relativePerf}% ${perfLabel}</span>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="index-card ${className}">
+                        <div class="index-header">
+                            <div>
+                                <div class="index-symbol">${symbol}</div>
+                                <div class="index-name">${name}</div>
+                            </div>
+                        </div>
+                        <div class="index-price">$${data.current}</div>
+                        <div class="index-changes">
+                            <div class="change-item">
+                                <div class="change-label">Day</div>
+                                <div class="change-value ${dayClass}">${data.dayChange > 0 ? '+' : ''}${data.dayChange}%</div>
+                            </div>
+                            <div class="change-item">
+                                <div class="change-label">Week</div>
+                                <div class="change-value ${weekClass}">${data.weekChange > 0 ? '+' : ''}${data.weekChange}%</div>
+                            </div>
+                            <div class="change-item">
+                                <div class="change-label">Month</div>
+                                <div class="change-value ${monthClass}">${data.monthChange > 0 ? '+' : ''}${data.monthChange}%</div>
+                            </div>
+                        </div>
+                        <div class="index-sparkline">
+                            <canvas id="${symbol.toLowerCase()}-spark" width="240" height="40"></canvas>
+                        </div>
+                        ${relPerfHtml}
+                    </div>
+                `;
+            }
+            
+            createVixCard(data) {
+                const level = parseFloat(data.current);
+                let status = 'Normal';
+                let statusClass = 'neutral';
+                
+                if (level < 15) {
+                    status = 'Low';
+                    statusClass = 'positive';
+                } else if (level > 30) {
+                    status = 'Extreme';
+                    statusClass = 'negative';
+                } else if (level > 25) {
+                    status = 'High';
+                    statusClass = 'negative';
+                }
+                
+                const dayClass = parseFloat(data.dayChange) >= 0 ? 'negative' : 'positive'; // Inverted for VIX
+                
+                return `
+                    <div class="index-card vix-card">
+                        <div class="index-header">
+                            <div>
+                                <div class="index-symbol">VIX</div>
+                                <div class="index-name">Volatility Index</div>
+                            </div>
+                        </div>
+                        <div class="index-price">${data.current}</div>
+                        <div class="index-changes">
+                            <div class="change-item">
+                                <div class="change-label">Day</div>
+                                <div class="change-value ${dayClass}">${data.dayChange > 0 ? '+' : ''}${data.dayChange}%</div>
+                            </div>
+                            <div class="change-item">
+                                <div class="change-label">Week</div>
+                                <div class="change-value ${dayClass}">${data.weekChange > 0 ? '+' : ''}${data.weekChange}%</div>
+                            </div>
+                            <div class="change-item">
+                                <div class="change-label">Status</div>
+                                <div class="change-value ${statusClass}">${status}</div>
+                            </div>
+                        </div>
+                        <div class="index-sparkline">
+                            <canvas id="vix-spark" width="240" height="40"></canvas>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            updateRegimeAnalysis(analysis) {
+                const regimeBox = document.getElementById('regimeBox');
+                const regimeValue = document.getElementById('regimeValue');
+                const regimeSignals = document.getElementById('regimeSignals');
+                
+                regimeBox.style.display = 'block';
+                
+                // Set regime value and color
+                regimeValue.textContent = analysis.regime;
+                regimeValue.className = 'regime-value';
+                
+                if (analysis.regime === 'Risk-On') {
+                    regimeValue.classList.add('regime-risk-on');
+                } else if (analysis.regime === 'Risk-Off') {
+                    regimeValue.classList.add('regime-risk-off');
+                } else {
+                    regimeValue.classList.add('regime-mixed');
+                }
+                
+                // Display signals
+                if (analysis.signals && analysis.signals.length > 0) {
+                    regimeSignals.innerHTML = analysis.signals.map(signal => `
+                        <div class="signal ${signal.type}">
+                            <span>${signal.type === 'bullish' ? '↑' : signal.type === 'bearish' ? '↓' : '⚠'}</span>
+                            ${signal.message}
+                        </div>
+                    `).join('');
+                } else {
+                    regimeSignals.innerHTML = '<div class="signal neutral">No strong signals detected</div>';
+                }
+            }
+            
+            updateBreadthDisplay() {
+                const breadth = this.marketData.breadth;
+                if (!breadth) return;
+                
+                // Update all 4 gauges including 200-day
+                this.updateGauge('gaugeDay', breadth.dayOf.percentage, '#8b5cf6');
+                this.updateGauge('gauge10', breadth.sma10.percentage, '#10b981');
+                this.updateGauge('gauge20', breadth.sma20.percentage, '#f59e0b');
+                this.updateGauge('gauge200', breadth.sma200.percentage, '#3b82f6');
                 
                 // Update stats
-                document.getElementById('dayUpCount').textContent = this.currentData.dayOf.up;
-                document.getElementById('above10Count').textContent = this.currentData.sma10.above;
-                document.getElementById('above20Count').textContent = this.currentData.sma20.above;
-                document.getElementById('above200Count').textContent = this.currentData.sma200.above;
-                document.getElementById('totalAnalyzed').textContent = this.currentData.total;
+                document.getElementById('dayUpCount').textContent = breadth.dayOf.up || 0;
+                document.getElementById('above10Count').textContent = breadth.sma10.above || 0;
+                document.getElementById('above20Count').textContent = breadth.sma20.above || 0;
+                document.getElementById('above200Count').textContent = breadth.sma200.above || 0;
+                document.getElementById('totalAnalyzed').textContent = breadth.total || 0;
                 
-                // Market regime analysis
-                const regime = this.analyzeMarketRegime();
-                const regimeElement = document.getElementById('marketRegime');
-                regimeElement.textContent = regime.text;
-                regimeElement.className = `stat-value ${regime.class}`;
+                // Breadth status based on 200-day SMA
+                const status = this.analyzeBreadthStatus(breadth.sma200.percentage);
+                const statusElement = document.getElementById('breadthStatus');
+                statusElement.textContent = status.text;
+                statusElement.className = `stat-value ${status.class}`;
                 
-                // Update timestamp
-                const now = new Date();
-                const isMarketHours = this.isMarketHours();
-                
-                let timeDisplay;
-                if (isMarketHours) {
-                    timeDisplay = `Live data: ${now.toLocaleString('en-US', {
-                        month: 'short', day: 'numeric', 
-                        hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-                    })}`;
-                } else {
-                    timeDisplay = `Last session: ${now.toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric', year: 'numeric'
-                    })} | Markets closed`;
-                }
-                
-                document.getElementById('lastUpdated').textContent = timeDisplay;
-            }
-            
-            isMarketHours() {
-                const now = new Date();
-                const et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-                const day = et.getDay(); // 0 = Sunday, 6 = Saturday
-                const hour = et.getHours();
-                const minute = et.getMinutes();
-                const time = hour * 100 + minute;
-                
-                // Market is open Monday-Friday 9:30 AM - 4:00 PM ET
-                return day >= 1 && day <= 5 && time >= 930 && time <= 1600;
+                // Update chart with historical data
+                this.createChart();
             }
             
             updateGauge(gaugeId, percentage, color) {
-                document.getElementById(`${gaugeId}Value`).textContent = percentage;
+                // Ensure percentage is a valid number
+                const pct = percentage || 0;
+                document.getElementById(`${gaugeId}Value`).textContent = pct + '%';
                 
                 const fillPath = document.getElementById(`${gaugeId}Fill`);
                 const circumference = 251;
-                const fillLength = (percentage / 100) * circumference;
+                const fillLength = (pct / 100) * circumference;
                 
                 fillPath.style.strokeDasharray = `${fillLength} ${circumference}`;
                 fillPath.style.stroke = color;
             }
             
-            analyzeMarketRegime() {
-                const { sma200 } = this.currentData;
-                
-                if (sma200.percentage >= 70) {
-                    return { text: 'Bull Market', class: 'stat-positive' };
-                } else if (sma200.percentage >= 50) {
-                    return { text: 'Mixed', class: 'stat-neutral' };
-                } else if (sma200.percentage >= 30) {
-                    return { text: 'Bear Market', class: 'stat-negative' };
+            analyzeBreadthStatus(sma200) {
+                const pct = sma200 || 0;
+                if (pct >= 80) {
+                    return { text: 'Very Strong', class: 'stat-positive' };
+                } else if (pct >= 60) {
+                    return { text: 'Strong', class: 'stat-positive' };
+                } else if (pct >= 40) {
+                    return { text: 'Neutral', class: 'stat-neutral' };
+                } else if (pct >= 20) {
+                    return { text: 'Weak', class: 'stat-negative' };
                 } else {
-                    return { text: 'Severe Bear', class: 'stat-negative' };
+                    return { text: 'Very Weak', class: 'stat-negative' };
                 }
             }
             
+            createSparkline(canvasId, data, color) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || !data || data.length === 0) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                const validData = data.filter(d => d != null);
+                if (validData.length < 2) return;
+                
+                const max = Math.max(...validData);
+                const min = Math.min(...validData);
+                const range = max - min || 1;
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                validData.forEach((value, i) => {
+                    const x = (i / (validData.length - 1)) * width;
+                    const y = height - ((value - min) / range) * height * 0.8 - height * 0.1;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                
+                ctx.stroke();
+            }
+            
             createChart() {
+                const breadth = this.marketData.breadth;
+                if (!breadth) return;
+                
                 const ctx = document.getElementById('breadthChart').getContext('2d');
                 
                 // Add today's data to historical
                 const today = new Date().toISOString().split('T')[0];
                 this.historicalData[today] = {
-                    dayOf: this.currentData.dayOf.percentage,
-                    sma10: this.currentData.sma10.percentage,
-                    sma20: this.currentData.sma20.percentage,
-                    sma200: this.currentData.sma200.percentage
+                    dayOf: breadth.dayOf.percentage,
+                    sma10: breadth.sma10.percentage,
+                    sma20: breadth.sma20.percentage,
+                    sma200: breadth.sma200.percentage
                 };
                 
-                // Prepare chart data - get last 30 days
-                const dates = Object.keys(this.historicalData).sort().slice(-30);
-                const dayOfData = dates.map(date => this.historicalData[date]?.dayOf || null).filter(v => v !== null);
-                const sma10Data = dates.map(date => this.historicalData[date]?.sma10 || null).filter(v => v !== null);
-                const sma20Data = dates.map(date => this.historicalData[date]?.sma20 || null).filter(v => v !== null);
-                const sma200Data = dates.map(date => this.historicalData[date]?.sma200 || null).filter(v => v !== null);
+                // Save to localStorage
+                this.saveHistoricalData();
                 
-                // Only create chart if we have real historical data
-                if (dayOfData.length === 0) {
-                    document.getElementById('chartContainer').style.display = 'none';
-                    return;
+                // Prepare chart data - last 30 days
+                const dates = Object.keys(this.historicalData).sort().slice(-30);
+                
+                if (dates.length === 0) return;
+                
+                // Destroy existing chart if it exists
+                if (this.chart) {
+                    this.chart.destroy();
                 }
                 
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: dates.slice(-dayOfData.length).map(date => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                        labels: dates.map(date => new Date(date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                        })),
                         datasets: [
                             {
-                                label: 'Day-of Breadth',
-                                data: dayOfData,
-                                borderColor: '#8b5cf6',
-                                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.2
-                            },
-                            {
-                                label: '10-Day SMA',
-                                data: sma10Data,
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.2
-                            },
-                            {
-                                label: '20-Day SMA',
-                                data: sma20Data,
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.2
-                            },
-                            {
-                                label: '200-Day SMA',
-                                data: sma200Data,
+                                label: '200-Day Breadth',
+                                data: dates.map(d => this.historicalData[d]?.sma200 || null),
                                 borderColor: '#3b82f6',
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                fill: false,
+                                tension: 0.2
+                            },
+                            {
+                                label: '20-Day',
+                                data: dates.map(d => this.historicalData[d]?.sma20 || null),
+                                borderColor: '#f59e0b',
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.2
+                            },
+                            {
+                                label: '10-Day',
+                                data: dates.map(d => this.historicalData[d]?.sma10 || null),
+                                borderColor: '#10b981',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.2
+                            },
+                            {
+                                label: 'Day-of',
+                                data: dates.map(d => this.historicalData[d]?.dayOf || null),
+                                borderColor: '#8b5cf6',
+                                borderWidth: 1,
+                                fill: false,
+                                tension: 0.2,
+                                borderDash: [5, 5]
                             }
                         ]
                     },
@@ -613,10 +1088,59 @@
                 });
             }
             
+            updateTimestamp() {
+                const now = new Date();
+                const isMarketHours = this.isMarketHours();
+                
+                let timeDisplay;
+                if (isMarketHours) {
+                    timeDisplay = `Live data: ${now.toLocaleString('en-US', {
+                        month: 'short', day: 'numeric', 
+                        hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+                    })}`;
+                } else {
+                    timeDisplay = `Last session: ${now.toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    })} | Markets closed`;
+                }
+                
+                document.getElementById('lastUpdated').textContent = timeDisplay;
+            }
+            
+            updateMarketStatus() {
+                const isOpen = this.isMarketHours();
+                const statusEl = document.getElementById('marketStatus');
+                const textEl = document.getElementById('statusText');
+                
+                if (isOpen) {
+                    statusEl.className = 'market-status status-open';
+                    textEl.textContent = 'Markets Open';
+                } else {
+                    statusEl.className = 'market-status status-closed';
+                    textEl.textContent = 'Markets Closed';
+                }
+            }
+            
+            isMarketHours() {
+                const now = new Date();
+                const et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+                const day = et.getDay();
+                const hour = et.getHours();
+                const minute = et.getMinutes();
+                const time = hour * 100 + minute;
+                
+                return day >= 1 && day <= 5 && time >= 930 && time <= 1600;
+            }
+            
             loadHistoricalData() {
                 const stored = localStorage.getItem('sp500BreadthHistory');
                 if (stored) {
-                    return JSON.parse(stored);
+                    try {
+                        return JSON.parse(stored);
+                    } catch (e) {
+                        console.error('Error parsing historical data:', e);
+                        return {};
+                    }
                 }
                 return {};
             }
@@ -632,21 +1156,18 @@
             showError(message) {
                 document.getElementById('errorMessage').textContent = message;
                 document.getElementById('errorSection').style.display = 'block';
-            }
-            
-            hideLoading() {
-                document.getElementById('loadingSection').style.display = 'none';
-            }
-            
-            showContent() {
-                document.getElementById('chartContainer').style.display = 'block';
-                document.getElementById('statsContainer').style.display = 'block';
+                
+                // Also show in indices section if it's completely empty
+                const indicesGrid = document.getElementById('indicesGrid');
+                if (indicesGrid && indicesGrid.innerHTML.includes('Loading')) {
+                    indicesGrid.innerHTML = `<div class="error">${message}</div>`;
+                }
             }
         }
         
-        // Initialize dashboard
+        // Initialize dashboard when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            new BreadthDashboard();
+            new MarketDashboard();
         });
     </script>
 </body>
