@@ -889,12 +889,25 @@
                     } else if (analysis.regime === 'Defensive Tone') {
                         translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Risk-off behavior, large caps holding better</div>';
                     } else {
-                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: No clear direction, typical consolidation</div>';
+                        // Choppy Action - explain why
+                        const strongCount = analysis.strongSignals || 0;
+                        if (strongCount === 0) {
+                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: No strong sector leadership, market lacks conviction</div>';
+                        } else {
+                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Mixed signals creating choppy, range-bound action</div>';
+                        }
                     }
                     
                     regimeSignals.innerHTML = signalsHtml + translation;
                 } else {
-                    regimeSignals.innerHTML = '<div class="signal neutral">No strong signals detected</div>';
+                    // Fallback for completely empty signals
+                    regimeSignals.innerHTML = `
+                        <div class="signal neutral">
+                            <span>📊</span>
+                            Market data incomplete
+                        </div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Unable to analyze market regime</div>
+                    `;
                 }
             }
             
@@ -1006,7 +1019,8 @@
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                                 borderWidth: 3,
                                 fill: false,
-                                tension: 0.2
+                                tension: 0.2,
+                                hidden: true // Hidden by default
                             },
                             {
                                 label: '20-Day',
@@ -1014,7 +1028,8 @@
                                 borderColor: '#f59e0b',
                                 borderWidth: 2,
                                 fill: false,
-                                tension: 0.2
+                                tension: 0.2,
+                                hidden: true // Hidden by default
                             },
                             {
                                 label: '10-Day',
@@ -1023,6 +1038,7 @@
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.2
+                                // Visible by default
                             },
                             {
                                 label: 'Day-of',
@@ -1031,7 +1047,8 @@
                                 borderWidth: 1,
                                 fill: false,
                                 tension: 0.2,
-                                borderDash: [5, 5]
+                                borderDash: [5, 5],
+                                hidden: true // Hidden by default
                             }
                         ]
                     },
@@ -1056,12 +1073,76 @@
                                         return value + '%';
                                     }
                                 },
-                                grid: { color: '#1e2139' }
+                                grid: { 
+                                    color: '#1e2139',
+                                    drawOnChartArea: function(context) {
+                                        // Draw reference lines at 25% and 80%
+                                        const chart = context.chart;
+                                        const yScale = chart.scales.y;
+                                        const ctx = chart.ctx;
+                                        
+                                        // Save the current state
+                                        ctx.save();
+                                        
+                                        // 25% reference line (low breadth)
+                                        const y25 = yScale.getPixelForValue(25);
+                                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)'; // Red, very faint
+                                        ctx.lineWidth = 1;
+                                        ctx.setLineDash([2, 4]);
+                                        ctx.beginPath();
+                                        ctx.moveTo(chart.chartArea.left, y25);
+                                        ctx.lineTo(chart.chartArea.right, y25);
+                                        ctx.stroke();
+                                        
+                                        // 80% reference line (high breadth)
+                                        const y80 = yScale.getPixelForValue(80);
+                                        ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)'; // Green, very faint
+                                        ctx.lineWidth = 1;
+                                        ctx.setLineDash([2, 4]);
+                                        ctx.beginPath();
+                                        ctx.moveTo(chart.chartArea.left, y80);
+                                        ctx.lineTo(chart.chartArea.right, y80);
+                                        ctx.stroke();
+                                        
+                                        // Restore the state
+                                        ctx.restore();
+                                        
+                                        return true; // Continue with normal grid drawing
+                                    }
+                                }
                             }
                         },
                         plugins: {
                             legend: {
-                                labels: { color: '#e0e6ed' }
+                                labels: { 
+                                    color: '#e0e6ed',
+                                    generateLabels: function(chart) {
+                                        const datasets = chart.data.datasets;
+                                        return datasets.map((dataset, i) => {
+                                            const meta = chart.getDatasetMeta(i);
+                                            const isVisible = !meta.hidden;
+                                            
+                                            return {
+                                                text: `${isVisible ? '✓' : '○'} ${dataset.label}`,
+                                                fillStyle: dataset.borderColor,
+                                                strokeStyle: dataset.borderColor,
+                                                lineWidth: dataset.borderWidth,
+                                                hidden: meta.hidden,
+                                                lineDash: dataset.borderDash || [],
+                                                datasetIndex: i
+                                            };
+                                        });
+                                    }
+                                },
+                                onClick: function(e, legendItem) {
+                                    const chart = e.chart;
+                                    const index = legendItem.datasetIndex;
+                                    const meta = chart.getDatasetMeta(index);
+                                    
+                                    // Toggle visibility
+                                    meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                                    chart.update();
+                                }
                             },
                             tooltip: {
                                 backgroundColor: '#151823',
