@@ -130,7 +130,6 @@
         .spy-card { --card-color: #3b82f6; }
         .qqq-card { --card-color: #8b5cf6; }
         .iwm-card { --card-color: #f59e0b; }
-        .vix-card { --card-color: #ef4444; }
         
         .index-header {
             display: flex;
@@ -344,6 +343,45 @@
         .chart-wrapper {
             position: relative;
             height: 320px;
+        }
+        
+        /* Time Range Selector */
+        .time-range-selector {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 0 20px;
+        }
+        
+        .time-range-btn {
+            padding: 8px 16px;
+            background: #0f1218;
+            border: 1px solid #1e2139;
+            border-radius: 8px;
+            color: #8b92a8;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 48px;
+        }
+        
+        .time-range-btn:hover {
+            background: #1a1f2e;
+            border-color: #2a3441;
+            color: #e0e6ed;
+        }
+        
+        .time-range-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+        
+        .time-range-btn.active:hover {
+            background: #2563eb;
+            border-color: #2563eb;
         }
         
         /* Stats Grid */
@@ -604,6 +642,16 @@
         
         <div class="chart-container" id="chartContainer">
             <div class="chart-title">Historical Breadth Trends</div>
+            
+            <!-- Time Range Selector -->
+            <div class="time-range-selector">
+                <button class="time-range-btn" data-range="7">1W</button>
+                <button class="time-range-btn" data-range="30">1M</button>
+                <button class="time-range-btn" data-range="90">3M</button>
+                <button class="time-range-btn" data-range="180">6M</button>
+                <button class="time-range-btn active" data-range="all">YTD</button>
+            </div>
+            
             <div class="chart-wrapper">
                 <canvas id="breadthChart"></canvas>
             </div>
@@ -622,12 +670,16 @@
                 
                 this.historicalData = {};
                 this.chart = null;
+                this.currentTimeRange = 'all'; // Track selected time range
                 
                 this.init();
             }
             
             async init() {
                 this.updateMarketStatus();
+                
+                // Initialize time range selector
+                this.initTimeRangeSelector();
                 
                 // Load historical data first
                 await this.loadHistoricalData();
@@ -739,10 +791,6 @@
                     grid.innerHTML += this.createIndexCard('IWM', 'Russell 2000', indices.iwm, 'iwm-card', relPerf);
                 }
                 
-                // VIX Card (special formatting)
-                if (indices.vix) {
-                    grid.innerHTML += this.createVixCard(indices.vix);
-                }
                 
                 // Update regime analysis
                 if (indices.analysis) {
@@ -754,7 +802,6 @@
                     if (indices.spy) this.createSparkline('spy-spark', indices.spy.sparkline, '#3b82f6');
                     if (indices.qqq) this.createSparkline('qqq-spark', indices.qqq.sparkline, '#8b5cf6');
                     if (indices.iwm) this.createSparkline('iwm-spark', indices.iwm.sparkline, '#f59e0b');
-                    if (indices.vix) this.createSparkline('vix-spark', indices.vix.sparkline, '#ef4444');
                 }, 100);
             }
             
@@ -806,53 +853,6 @@
                 `;
             }
             
-            createVixCard(data) {
-                const level = parseFloat(data.current);
-                let status = 'Normal';
-                let statusClass = 'neutral';
-                
-                if (level < 15) {
-                    status = 'Low';
-                    statusClass = 'positive';
-                } else if (level > 30) {
-                    status = 'Extreme';
-                    statusClass = 'negative';
-                } else if (level > 25) {
-                    status = 'High';
-                    statusClass = 'negative';
-                }
-                
-                const dayClass = parseFloat(data.dayChange) >= 0 ? 'negative' : 'positive'; // Inverted for VIX
-                
-                return `
-                    <div class="index-card vix-card">
-                        <div class="index-header">
-                            <div>
-                                <div class="index-symbol">VIX</div>
-                                <div class="index-name">Volatility Index</div>
-                            </div>
-                        </div>
-                        <div class="index-price">${data.current}</div>
-                        <div class="index-changes">
-                            <div class="change-item">
-                                <div class="change-label">Day</div>
-                                <div class="change-value ${dayClass}">${data.dayChange > 0 ? '+' : ''}${data.dayChange}%</div>
-                            </div>
-                            <div class="change-item">
-                                <div class="change-label">Week</div>
-                                <div class="change-value ${dayClass}">${data.weekChange > 0 ? '+' : ''}${data.weekChange}%</div>
-                            </div>
-                            <div class="change-item">
-                                <div class="change-label">Status</div>
-                                <div class="change-value ${statusClass}">${status}</div>
-                            </div>
-                        </div>
-                        <div class="index-sparkline">
-                            <canvas id="vix-spark" width="240" height="40"></canvas>
-                        </div>
-                    </div>
-                `;
-            }
             
             updateRegimeAnalysis(analysis) {
                 const regimeBox = document.getElementById('regimeBox');
@@ -981,8 +981,8 @@
                 // Save to localStorage
                 this.saveHistoricalData();
                 
-                // Prepare chart data - last 30 days
-                const dates = Object.keys(this.historicalData).sort().slice(-30);
+                // Prepare chart data based on selected time range
+                const dates = this.getFilteredDates();
                 
                 if (dates.length === 0) return;
                 
@@ -1106,6 +1106,37 @@
                     statusEl.className = 'market-status status-closed';
                     textEl.textContent = 'Markets Closed';
                 }
+            }
+            
+            initTimeRangeSelector() {
+                const buttons = document.querySelectorAll('.time-range-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        // Remove active class from all buttons
+                        buttons.forEach(b => b.classList.remove('active'));
+                        // Add active class to clicked button
+                        e.target.classList.add('active');
+                        // Update current time range
+                        this.currentTimeRange = e.target.dataset.range;
+                        // Recreate chart with new time range
+                        if (this.marketData.breadth) {
+                            this.createChart();
+                        }
+                    });
+                });
+            }
+            
+            getFilteredDates() {
+                const allDates = Object.keys(this.historicalData).sort();
+                
+                if (this.currentTimeRange === 'all') {
+                    // Show full YTD (or last 180 days max for performance)
+                    return allDates.length > 180 ? allDates.slice(-180) : allDates;
+                }
+                
+                // For specific day ranges (7, 30, 90, 180)
+                const days = parseInt(this.currentTimeRange);
+                return allDates.slice(-days);
             }
             
             isMarketHours() {
