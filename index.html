@@ -41,6 +41,7 @@
             font-size: 28px;
             font-weight: 700;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -464,7 +465,7 @@
             </div>
             
             <div class="regime-box" id="regimeBox" style="display: none;">
-                <div class="regime-label">Market Regime</div>
+                <div class="regime-label">This Week's Market Health Check</div>
                 <div id="regimeValue" class="regime-value">--</div>
                 <div class="regime-signals" id="regimeSignals"></div>
             </div>
@@ -575,6 +576,30 @@
                 <div id="errorMessage"></div>
                 <button class="retry-button" onclick="window.location.reload()">Retry</button>
             </div>
+            
+            <!-- Stats Section - moved here from bottom -->
+            <div class="stats-container" id="statsContainer">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Stocks Positive in the S&P 500</div>
+                        <div class="stat-value stat-positive" id="dayUpCount">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Stocks above 10-Day SMA</div>
+                        <div class="stat-value stat-positive" id="above10Count">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Stocks above 20-Day SMA</div>
+                        <div class="stat-value stat-neutral" id="above20Count">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Stocks above 200-Day SMA</div>
+                        <div class="stat-value stat-positive" id="above200Count">--</div>
+                    </div>
+                </div>
+                
+                <div class="last-updated" id="lastUpdated"></div>
+            </div>
         </div>
         
         <div class="chart-container" id="chartContainer">
@@ -582,37 +607,6 @@
             <div class="chart-wrapper">
                 <canvas id="breadthChart"></canvas>
             </div>
-        </div>
-        
-        <div class="stats-container" id="statsContainer">
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-label">Day-of Up</div>
-                    <div class="stat-value stat-positive" id="dayUpCount">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Above 10-Day</div>
-                    <div class="stat-value stat-positive" id="above10Count">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Above 20-Day</div>
-                    <div class="stat-value stat-neutral" id="above20Count">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Above 200-Day</div>
-                    <div class="stat-value stat-positive" id="above200Count">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Breadth Status</div>
-                    <div class="stat-value" id="breadthStatus">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Total Analyzed</div>
-                    <div class="stat-value stat-neutral" id="totalAnalyzed">--</div>
-                </div>
-            </div>
-            
-            <div class="last-updated" id="lastUpdated"></div>
         </div>
     </div>
 
@@ -626,7 +620,7 @@
                     breadth: null
                 };
                 
-                this.historicalData = this.loadHistoricalData();
+                this.historicalData = {};
                 this.chart = null;
                 
                 this.init();
@@ -634,6 +628,9 @@
             
             async init() {
                 this.updateMarketStatus();
+                
+                // Load historical data first
+                await this.loadHistoricalData();
                 
                 try {
                     // Fetch all data using the 'all' endpoint
@@ -772,7 +769,7 @@
                     const perfLabel = parseFloat(relativePerf) >= 0 ? 'Outperforming' : 'Underperforming';
                     relPerfHtml = `
                         <div class="relative-performance">
-                            <span class="vs-spy">vs SPY</span>
+                            <span class="vs-spy">1-Week vs S&P 500</span>
                             <span class="vs-spy-value ${perfClass}">${relativePerf > 0 ? '+' : ''}${relativePerf}% ${perfLabel}</span>
                         </div>
                     `;
@@ -868,9 +865,9 @@
                 regimeValue.textContent = analysis.regime;
                 regimeValue.className = 'regime-value';
                 
-                if (analysis.regime === 'Risk-On') {
+                if (analysis.regime === 'Buyers In Control') {
                     regimeValue.classList.add('regime-risk-on');
-                } else if (analysis.regime === 'Risk-Off') {
+                } else if (analysis.regime === 'Defensive Tone') {
                     regimeValue.classList.add('regime-risk-off');
                 } else {
                     regimeValue.classList.add('regime-mixed');
@@ -878,12 +875,24 @@
                 
                 // Display signals
                 if (analysis.signals && analysis.signals.length > 0) {
-                    regimeSignals.innerHTML = analysis.signals.map(signal => `
+                    let signalsHtml = analysis.signals.map(signal => `
                         <div class="signal ${signal.type}">
-                            <span>${signal.type === 'bullish' ? '↑' : signal.type === 'bearish' ? '↓' : '⚠'}</span>
+                            <span>${signal.type === 'bullish' ? '✅' : signal.type === 'bearish' ? '⚠️' : '📊'}</span>
                             ${signal.message}
                         </div>
                     `).join('');
+                    
+                    // Add translation based on regime
+                    let translation = '';
+                    if (analysis.regime === 'Buyers In Control') {
+                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Healthy market with broad participation</div>';
+                    } else if (analysis.regime === 'Defensive Tone') {
+                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Risk-off behavior, large caps holding better</div>';
+                    } else {
+                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: No clear direction, typical consolidation</div>';
+                    }
+                    
+                    regimeSignals.innerHTML = signalsHtml + translation;
                 } else {
                     regimeSignals.innerHTML = '<div class="signal neutral">No strong signals detected</div>';
                 }
@@ -904,13 +913,6 @@
                 document.getElementById('above10Count').textContent = breadth.sma10.above || 0;
                 document.getElementById('above20Count').textContent = breadth.sma20.above || 0;
                 document.getElementById('above200Count').textContent = breadth.sma200.above || 0;
-                document.getElementById('totalAnalyzed').textContent = breadth.total || 0;
-                
-                // Breadth status based on 200-day SMA
-                const status = this.analyzeBreadthStatus(breadth.sma200.percentage);
-                const statusElement = document.getElementById('breadthStatus');
-                statusElement.textContent = status.text;
-                statusElement.className = `stat-value ${status.class}`;
                 
                 // Update chart with historical data
                 this.createChart();
@@ -927,21 +929,6 @@
                 
                 fillPath.style.strokeDasharray = `${fillLength} ${circumference}`;
                 fillPath.style.stroke = color;
-            }
-            
-            analyzeBreadthStatus(sma200) {
-                const pct = sma200 || 0;
-                if (pct >= 80) {
-                    return { text: 'Very Strong', class: 'stat-positive' };
-                } else if (pct >= 60) {
-                    return { text: 'Strong', class: 'stat-positive' };
-                } else if (pct >= 40) {
-                    return { text: 'Neutral', class: 'stat-neutral' };
-                } else if (pct >= 20) {
-                    return { text: 'Weak', class: 'stat-negative' };
-                } else {
-                    return { text: 'Very Weak', class: 'stat-negative' };
-                }
             }
             
             createSparkline(canvasId, data, color) {
@@ -1132,17 +1119,33 @@
                 return day >= 1 && day <= 5 && time >= 930 && time <= 1600;
             }
             
-            loadHistoricalData() {
+            async loadHistoricalData() {
+                // First try to load from historical JSON file
+                try {
+                    const response = await fetch('./historical-breadth-2025-ytd.json');
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        console.log(`Loaded ${Object.keys(fileData).length} days of historical breadth data`);
+                        this.historicalData = fileData;
+                    }
+                } catch (error) {
+                    console.log('No historical JSON file found, using localStorage fallback');
+                }
+                
+                // Merge with localStorage data (for any newer data)
                 const stored = localStorage.getItem('sp500BreadthHistory');
                 if (stored) {
                     try {
-                        return JSON.parse(stored);
+                        const localData = JSON.parse(stored);
+                        // Merge local data with file data (local data takes precedence for same dates)
+                        this.historicalData = { ...this.historicalData, ...localData };
+                        console.log(`Merged with ${Object.keys(localData).length} days from localStorage`);
                     } catch (e) {
-                        console.error('Error parsing historical data:', e);
-                        return {};
+                        console.error('Error parsing localStorage historical data:', e);
                     }
                 }
-                return {};
+                
+                console.log(`Total historical data points: ${Object.keys(this.historicalData).length}`);
             }
             
             saveHistoricalData() {
