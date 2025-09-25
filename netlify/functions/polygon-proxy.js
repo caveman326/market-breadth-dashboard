@@ -1,12 +1,13 @@
 // netlify/functions/polygon-proxy.js
-// Fixed version that handles insufficient data for 200-day SMA properly
+// Enhanced version with market indices and fixed 200-day SMA
 
-// Global cache to store SMA data (persists across function calls)
-let cachedSMAData = null;
+// Global cache to store data
+let cachedBreadthData = null;
+let cachedIndicesData = null;
 let cacheTimestamp = null;
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes for indices, 1 hour for breadth
 
-// Complete S&P 500 stock list
+// Complete S&P 500 stock list (keeping your original list)
 const SP500_SYMBOLS = [
   'MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES', 'AFL', 'A', 
   'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT', 'ALL', 'GOOGL', 
@@ -60,14 +61,14 @@ const SP500_SYMBOLS = [
   'WSM', 'WMB', 'WTW', 'WDAY', 'WYNN', 'XEL', 'XYL', 'YUM', 'ZBRA', 'ZBH', 'ZTS'
 ];
 
-// Helper function to fetch comprehensive stock data for all breadth calculations
+// Helper function to fetch comprehensive stock data for breadth calculations
 async function fetchStockData(symbol, apiKey) {
   try {
-    // FIXED: Request 2 years of data to ensure we get 200+ trading days
+    // FIXED: Get 365 calendar days to ensure 200+ trading days
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 2 years
+    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDate}/${endDate}?adjusted=true&sort=desc&limit=500&apikey=${apiKey}`;
+    const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDate}/${endDate}?adjusted=true&sort=desc&limit=300&apikey=${apiKey}`;
     
     const response = await fetch(url);
     
@@ -78,14 +79,14 @@ async function fetchStockData(symbol, apiKey) {
     const data = await response.json();
     
     if (!data.results || data.results.length < 2) {
-      return null; // Need at least 2 days for day-of calculation
+      return null;
     }
     
     const prices = data.results.map(day => day.c);
-    const currentPrice = prices[0]; // Most recent price
-    const previousClose = prices[1]; // Yesterday's close
+    const currentPrice = prices[0];
+    const previousClose = prices[1];
     
-    // Calculate SMAs with flexible requirements
+    // Calculate SMAs with available data
     let sma10 = null, sma20 = null, sma200 = null;
     
     if (prices.length >= 10) {
@@ -96,23 +97,23 @@ async function fetchStockData(symbol, apiKey) {
       sma20 = prices.slice(0, 20).reduce((sum, price) => sum + price, 0) / 20;
     }
     
-    // FIXED: Use adaptive SMA calculation for 200-day
-    // Use 200 days if available, otherwise use what we have (minimum 50 days)
-    if (prices.length >= 50) {
-      const smaLength = Math.min(200, prices.length);
-      sma200 = prices.slice(0, smaLength).reduce((sum, price) => sum + price, 0) / smaLength;
+    // FIXED: More flexible 200-day calculation
+    if (prices.length >= 200) {
+      sma200 = prices.slice(0, 200).reduce((sum, price) => sum + price, 0) / 200;
+    } else if (prices.length >= 100) {
+      // Fallback: Use available data if we have at least 100 days
+      sma200 = prices.reduce((sum, price) => sum + price, 0) / prices.length;
     }
     
     return {
       symbol,
       currentPrice,
       previousClose,
-      dayOf: currentPrice > previousClose, // Up for the day
+      dayOf: currentPrice > previousClose,
       aboveSMA10: sma10 ? currentPrice > sma10 : null,
       aboveSMA20: sma20 ? currentPrice > sma20 : null,
       aboveSMA200: sma200 ? currentPrice > sma200 : null,
-      dataPoints: prices.length,
-      smaLength: sma200 ? Math.min(200, prices.length) : null // Track actual SMA length used
+      dataPoints: prices.length
     };
     
   } catch (error) {
@@ -121,9 +122,132 @@ async function fetchStockData(symbol, apiKey) {
   }
 }
 
+// Function to fetch market indices data (SPY, QQQ, IWM, VIX)
+async function fetchMarketIndices(apiKey) {
+  const indices = ['SPY', 'QQQ', 'IWM', 'UVXY']; // UVXY as VIX proxy
+  const endDate = new Date().toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const promises = indices.map(async (symbol) => {
+    try {
+      const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${startDate}/${endDate}?adjusted=true&apikey=${apiKey}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (!data.results || data.results.length < 2) return null;
+      
+      const prices = data.results.map(d => d.c);
+      const current = prices[prices.length - 1];
+      const yesterday = prices[prices.length - 2];
+      const weekAgo = prices[Math.max(0, prices.length - 6)];
+      const monthAgo = prices[0];
+      
+      // Get high/low for the period
+      const periodHigh = Math.max(...prices);
+      const periodLow = Math.min(...prices);
+      
+      return {
+        symbol,
+        current: current.toFixed(2),
+        dayChange: ((current / yesterday - 1) * 100).toFixed(2),
+        weekChange: ((current / weekAgo - 1) * 100).toFixed(2),
+        monthChange: ((current / monthAgo - 1) * 100).toFixed(2),
+        periodHigh: periodHigh.toFixed(2),
+        periodLow: periodLow.toFixed(2),
+        sparkline: prices.slice(-10) // Last 10 days for mini chart
+      };
+    } catch (error) {
+      console.error(`Error fetching ${symbol}:`, error);
+      return null;
+    }
+  });
+  
+  const results = await Promise.all(promises);
+  const validResults = results.filter(r => r !== null);
+  
+  // Calculate relative performance
+  const spy = validResults.find(r => r.symbol === 'SPY');
+  const qqq = validResults.find(r => r.symbol === 'QQQ');
+  const iwm = validResults.find(r => r.symbol === 'IWM');
+  const vix = validResults.find(r => r.symbol === 'UVXY');
+  
+  // Market regime analysis
+  const analysis = analyzeMarketRegime(spy, qqq, iwm, vix);
+  
+  return {
+    spy,
+    qqq,
+    iwm,
+    vix,
+    analysis,
+    timestamp: new Date().toISOString()
+  };
+}
+
+// Analyze market regime based on indices
+function analyzeMarketRegime(spy, qqq, iwm, vix) {
+  const signals = [];
+  let regime = 'Neutral';
+  
+  if (qqq && spy) {
+    const techRelative = parseFloat(qqq.weekChange) - parseFloat(spy.weekChange);
+    if (techRelative > 2) {
+      signals.push({
+        type: 'bullish',
+        message: 'Tech leading market (+' + techRelative.toFixed(1) + '%)'
+      });
+    } else if (techRelative < -2) {
+      signals.push({
+        type: 'bearish',
+        message: 'Tech lagging market (' + techRelative.toFixed(1) + '%)'
+      });
+    }
+  }
+  
+  if (iwm && spy) {
+    const smallCapRelative = parseFloat(iwm.weekChange) - parseFloat(spy.weekChange);
+    if (smallCapRelative > 1) {
+      signals.push({
+        type: 'bullish',
+        message: 'Small caps outperforming (+' + smallCapRelative.toFixed(1) + '%)'
+      });
+    } else if (smallCapRelative < -3) {
+      signals.push({
+        type: 'bearish',
+        message: 'Flight to quality (' + smallCapRelative.toFixed(1) + '%)'
+      });
+    }
+  }
+  
+  if (vix) {
+    const vixLevel = parseFloat(vix.current);
+    if (vixLevel > 25) {
+      signals.push({
+        type: 'extreme',
+        message: 'Elevated volatility (' + vixLevel.toFixed(1) + ')'
+      });
+    } else if (vixLevel < 15) {
+      signals.push({
+        type: 'complacent',
+        message: 'Low volatility environment'
+      });
+    }
+  }
+  
+  // Determine overall regime
+  const bullCount = signals.filter(s => s.type === 'bullish').length;
+  const bearCount = signals.filter(s => s.type === 'bearish').length;
+  
+  if (bullCount > bearCount) regime = 'Risk-On';
+  else if (bearCount > bullCount) regime = 'Risk-Off';
+  else regime = 'Mixed';
+  
+  return { regime, signals };
+}
+
 // Main function to calculate all breadth data
 async function calculateBreadthData(apiKey) {
-  console.log(`Calculating comprehensive breadth for ${SP500_SYMBOLS.length} stocks...`);
+  console.log(`Calculating breadth for ${SP500_SYMBOLS.length} stocks...`);
   
   let dayOfUp = 0, dayOfTotal = 0;
   let sma10Above = 0, sma10Total = 0;
@@ -131,11 +255,10 @@ async function calculateBreadthData(apiKey) {
   let sma200Above = 0, sma200Total = 0;
   let totalValid = 0;
   let processed = 0;
-  let smaLengthSum = 0; // Track average SMA length used
   
-  // Rate limiting: Stay under 100 requests per second
+  // Rate limiting: batch processing
   const batchSize = 25;
-  const batchDelay = 300; // 300ms delay = ~83 requests/second (safe buffer)
+  const batchDelay = 300;
   const batches = [];
   
   for (let i = 0; i < SP500_SYMBOLS.length; i += batchSize) {
@@ -144,7 +267,7 @@ async function calculateBreadthData(apiKey) {
   
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
-    console.log(`Processing batch ${batchIndex + 1}/${batches.length} (Rate limited: ${batchDelay}ms delay)`);
+    console.log(`Processing batch ${batchIndex + 1}/${batches.length}`);
     
     const promises = batch.map(symbol => fetchStockData(symbol, apiKey));
     const results = await Promise.allSettled(promises);
@@ -155,11 +278,11 @@ async function calculateBreadthData(apiKey) {
         const stockData = result.value;
         totalValid++;
         
-        // Day-of breadth (always available if we have 2+ days)
+        // Day-of breadth
         dayOfTotal++;
         if (stockData.dayOf) dayOfUp++;
         
-        // SMA breadth (only count if we have enough data)
+        // SMA breadth
         if (stockData.aboveSMA10 !== null) {
           sma10Total++;
           if (stockData.aboveSMA10) sma10Above++;
@@ -170,11 +293,9 @@ async function calculateBreadthData(apiKey) {
           if (stockData.aboveSMA20) sma20Above++;
         }
         
-        // FIXED: Count 200-day SMA even if using fewer than 200 days
         if (stockData.aboveSMA200 !== null) {
           sma200Total++;
           if (stockData.aboveSMA200) sma200Above++;
-          if (stockData.smaLength) smaLengthSum += stockData.smaLength;
         }
         
       } else {
@@ -182,7 +303,7 @@ async function calculateBreadthData(apiKey) {
       }
     });
     
-    // Rate limiting delay between batches
+    // Rate limiting delay
     if (batchIndex < batches.length - 1) {
       await new Promise(resolve => setTimeout(resolve, batchDelay));
     }
@@ -194,9 +315,7 @@ async function calculateBreadthData(apiKey) {
   const sma20Percentage = sma20Total > 0 ? Math.round((sma20Above / sma20Total) * 100) : 0;
   const sma200Percentage = sma200Total > 0 ? Math.round((sma200Above / sma200Total) * 100) : 0;
   
-  const avgSmaLength = sma200Total > 0 ? Math.round(smaLengthSum / sma200Total) : 0;
-  
-  console.log(`Results: Day-of: ${dayOfUp}/${dayOfTotal}, SMA10: ${sma10Above}/${sma10Total}, SMA20: ${sma20Above}/${sma20Total}, SMA200: ${sma200Above}/${sma200Total} (avg ${avgSmaLength}-day)`);
+  console.log(`Results: Day-of: ${dayOfUp}/${dayOfTotal}, SMA200: ${sma200Above}/${sma200Total}`);
   
   return {
     dayOf: {
@@ -217,19 +336,17 @@ async function calculateBreadthData(apiKey) {
     sma200: {
       above: sma200Above,
       below: sma200Total - sma200Above,
-      percentage: sma200Percentage,
-      avgDays: avgSmaLength // Show actual average SMA length used
+      percentage: sma200Percentage
     },
     total: totalValid,
     timestamp: new Date().toISOString(),
-    processed,
-    // Empty historical data for now (will add chart later)
-    historical: []
+    processed
   };
 }
 
+// Main handler
 exports.handler = async (event, context) => {
-  // Handle CORS preflight
+  // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -241,13 +358,10 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Only allow GET requests
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -257,58 +371,67 @@ exports.handler = async (event, context) => {
   if (!apiKey) {
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ error: 'API key not configured' })
     };
   }
 
+  // Check what type of data is requested
+  const queryParams = event.queryStringParameters || {};
+  const dataType = queryParams.type || 'all'; // 'indices', 'breadth', or 'all'
+
   try {
-    // Check if we have valid cached data
-    const now = Date.now();
-    const isCacheValid = cachedSMAData && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION_MS);
+    let responseData = {};
     
-    if (isCacheValid) {
-      console.log('Returning cached breadth data');
-      return {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
-        },
-        body: JSON.stringify({
-          ...cachedSMAData,
-          cached: true,
-          cacheAge: Math.round((now - cacheTimestamp) / 1000 / 60) // minutes
-        })
-      };
+    // Fetch market indices (always fresh, 5-min cache)
+    if (dataType === 'indices' || dataType === 'all') {
+      const now = Date.now();
+      const indicesCacheValid = cachedIndicesData && cacheTimestamp && 
+                               (now - cacheTimestamp < CACHE_DURATION_MS);
+      
+      if (indicesCacheValid && dataType === 'indices') {
+        responseData.indices = cachedIndicesData;
+        responseData.cached = true;
+      } else {
+        console.log('Fetching fresh indices data...');
+        const indicesData = await fetchMarketIndices(apiKey);
+        cachedIndicesData = indicesData;
+        cacheTimestamp = now;
+        responseData.indices = indicesData;
+        responseData.cached = false;
+      }
     }
     
-    // No valid cache, calculate fresh data
-    console.log('Cache expired or missing, calculating fresh breadth data...');
-    const breadthData = await calculateBreadthData(apiKey);
-    
-    // Cache the results
-    cachedSMAData = breadthData;
-    cacheTimestamp = now;
+    // Fetch breadth data (1-hour cache)
+    if (dataType === 'breadth' || dataType === 'all') {
+      const now = Date.now();
+      const breadthCacheValid = cachedBreadthData && cacheTimestamp && 
+                                (now - cacheTimestamp < CACHE_DURATION_MS * 12); // 1 hour
+      
+      if (breadthCacheValid) {
+        responseData.breadth = cachedBreadthData;
+        responseData.breadthCached = true;
+      } else {
+        console.log('Calculating fresh breadth data...');
+        const breadthData = await calculateBreadthData(apiKey);
+        cachedBreadthData = breadthData;
+        responseData.breadth = breadthData;
+        responseData.breadthCached = false;
+      }
+    }
     
     return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+        'Cache-Control': 'public, max-age=300' // 5 minutes
       },
-      body: JSON.stringify({
-        ...breadthData,
-        cached: false
-      })
+      body: JSON.stringify(responseData)
     };
     
   } catch (error) {
-    console.error('Breadth calculation error:', error);
+    console.error('API error:', error);
     
     return {
       statusCode: 500,
@@ -317,7 +440,7 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        error: 'Failed to calculate comprehensive breadth data',
+        error: 'Failed to fetch market data',
         details: error.message 
       })
     };
