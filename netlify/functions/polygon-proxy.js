@@ -185,6 +185,7 @@ async function fetchMarketIndices(apiKey) {
 // Analyze market regime based on indices
 function analyzeMarketRegime(spy, qqq, iwm) {
   const signals = [];
+  const weakSignals = []; // Track weak/neutral conditions
   let regime = 'Neutral';
   
   if (qqq && spy) {
@@ -198,6 +199,11 @@ function analyzeMarketRegime(spy, qqq, iwm) {
       signals.push({
         type: 'bearish',
         message: 'Tech lagging market (' + techRelative.toFixed(1) + '%)'
+      });
+    } else {
+      weakSignals.push({
+        type: 'neutral',
+        message: 'Tech neutral vs market (' + (techRelative >= 0 ? '+' : '') + techRelative.toFixed(1) + '%)'
       });
     }
   }
@@ -214,6 +220,11 @@ function analyzeMarketRegime(spy, qqq, iwm) {
         type: 'bearish',
         message: 'Flight to quality (' + smallCapRelative.toFixed(1) + '%)'
       });
+    } else {
+      weakSignals.push({
+        type: 'neutral',
+        message: 'Small caps neutral vs market (' + (smallCapRelative >= 0 ? '+' : '') + smallCapRelative.toFixed(1) + '%)'
+      });
     }
   }
   
@@ -225,7 +236,10 @@ function analyzeMarketRegime(spy, qqq, iwm) {
   else if (bearCount > bullCount) regime = 'Defensive Tone';
   else regime = 'Choppy Action';
   
-  return { regime, signals };
+  // Combine strong and weak signals for display
+  const allSignals = [...signals, ...weakSignals];
+  
+  return { regime, signals: allSignals, strongSignals: signals.length };
 }
 
 // Main function to calculate all breadth data
