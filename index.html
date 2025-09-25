@@ -345,6 +345,17 @@
             height: 320px;
         }
         
+        /* Chart Legend Styling */
+        .chart-wrapper canvas {
+            position: relative;
+        }
+        
+        /* Custom legend item styling with CSS for strikethrough */
+        .legend-hidden {
+            text-decoration: line-through !important;
+            opacity: 0.6;
+        }
+        
         /* Time Range Selector */
         .time-range-selector {
             display: flex;
@@ -1004,6 +1015,9 @@
                     this.chart.destroy();
                 }
                 
+                // Store dashboard reference for legend callback
+                const dashboard = this;
+                
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1049,6 +1063,30 @@
                                 tension: 0.2,
                                 borderDash: [5, 5],
                                 hidden: true // Hidden by default
+                            },
+                            {
+                                label: 'Low Breadth (25%)',
+                                data: dates.map(() => 25),
+                                borderColor: 'rgba(239, 68, 68, 0.4)',
+                                borderWidth: 1,
+                                borderDash: [4, 4],
+                                fill: false,
+                                tension: 0,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                hidden: false
+                            },
+                            {
+                                label: 'High Breadth (80%)',
+                                data: dates.map(() => 80),
+                                borderColor: 'rgba(16, 185, 129, 0.4)',
+                                borderWidth: 1,
+                                borderDash: [4, 4],
+                                fill: false,
+                                tension: 0,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                hidden: false
                             }
                         ]
                     },
@@ -1073,68 +1111,21 @@
                                         return value + '%';
                                     }
                                 },
-                                grid: { 
-                                    color: '#1e2139',
-                                    drawOnChartArea: function(context) {
-                                        // Draw reference lines at 25% and 80%
-                                        const chart = context.chart;
-                                        const yScale = chart.scales.y;
-                                        const ctx = chart.ctx;
-                                        
-                                        // Save the current state
-                                        ctx.save();
-                                        
-                                        // 25% reference line (low breadth)
-                                        const y25 = yScale.getPixelForValue(25);
-                                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)'; // Red, very faint
-                                        ctx.lineWidth = 1;
-                                        ctx.setLineDash([2, 4]);
-                                        ctx.beginPath();
-                                        ctx.moveTo(chart.chartArea.left, y25);
-                                        ctx.lineTo(chart.chartArea.right, y25);
-                                        ctx.stroke();
-                                        
-                                        // 80% reference line (high breadth)
-                                        const y80 = yScale.getPixelForValue(80);
-                                        ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)'; // Green, very faint
-                                        ctx.lineWidth = 1;
-                                        ctx.setLineDash([2, 4]);
-                                        ctx.beginPath();
-                                        ctx.moveTo(chart.chartArea.left, y80);
-                                        ctx.lineTo(chart.chartArea.right, y80);
-                                        ctx.stroke();
-                                        
-                                        // Restore the state
-                                        ctx.restore();
-                                        
-                                        return true; // Continue with normal grid drawing
-                                    }
-                                }
+                                grid: { color: '#1e2139' }
                             }
                         },
                         plugins: {
                             legend: {
                                 labels: { 
-                                    color: '#e0e6ed',
-                                    generateLabels: function(chart) {
-                                        const datasets = chart.data.datasets;
-                                        return datasets.map((dataset, i) => {
-                                            const meta = chart.getDatasetMeta(i);
-                                            const isVisible = !meta.hidden;
-                                            
-                                            return {
-                                                text: `${isVisible ? '✓' : '○'} ${dataset.label}`,
-                                                fillStyle: dataset.borderColor,
-                                                strokeStyle: dataset.borderColor,
-                                                lineWidth: dataset.borderWidth,
-                                                hidden: meta.hidden,
-                                                lineDash: dataset.borderDash || [],
-                                                datasetIndex: i
-                                            };
-                                        });
+                                    color: '#ffffff',
+                                    usePointStyle: false,
+                                    filter: function(legendItem, chartData) {
+                                        // Hide reference lines from legend
+                                        const dataset = chartData.datasets[legendItem.datasetIndex];
+                                        return !dataset.label.includes('Breadth (');
                                     }
                                 },
-                                onClick: function(e, legendItem) {
+                                onClick: function(e, legendItem, legend) {
                                     const chart = e.chart;
                                     const index = legendItem.datasetIndex;
                                     const meta = chart.getDatasetMeta(index);
@@ -1142,6 +1133,11 @@
                                     // Toggle visibility
                                     meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
                                     chart.update();
+                                    
+                                    // Update legend display after toggle
+                                    setTimeout(() => {
+                                        dashboard.updateLegendDisplay();
+                                    }, 50);
                                 }
                             },
                             tooltip: {
@@ -1154,6 +1150,34 @@
                         }
                     }
                 });
+                
+                // Update legend with checkmarks after chart is created
+                setTimeout(() => {
+                    this.updateLegendDisplay();
+                }, 100);
+            }
+            
+            updateLegendDisplay() {
+                // Use DOM manipulation to add checkmarks to legend since Chart.js doesn't support this well
+                const legendItems = document.querySelectorAll('.chart-wrapper canvas + div ul li');
+                if (legendItems.length === 0) return;
+                
+                // Get chart datasets to check visibility
+                if (this.chart && this.chart.data.datasets) {
+                    this.chart.data.datasets.forEach((dataset, index) => {
+                        if (index < 4 && legendItems[index]) { // Only main datasets, skip reference lines
+                            const meta = this.chart.getDatasetMeta(index);
+                            const isVisible = !meta.hidden;
+                            const icon = isVisible ? '✓' : '○';
+                            const legendText = legendItems[index].querySelector('span');
+                            if (legendText) {
+                                legendText.style.color = '#ffffff';
+                                legendText.style.textDecoration = isVisible ? 'none' : 'line-through';
+                                legendText.textContent = `${icon} ${dataset.label}`;
+                            }
+                        }
+                    });
+                }
             }
             
             updateTimestamp() {
