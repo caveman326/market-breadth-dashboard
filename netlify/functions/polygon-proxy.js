@@ -124,7 +124,7 @@ async function fetchStockData(symbol, apiKey) {
 
 // Function to fetch market indices data (SPY, QQQ, IWM, VIX)
 async function fetchMarketIndices(apiKey) {
-  const indices = ['SPY', 'QQQ', 'IWM', 'UVXY']; // UVXY as VIX proxy
+  const indices = ['SPY', 'QQQ', 'IWM', 'I:VIX']; // VIX volatility index
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
@@ -169,7 +169,7 @@ async function fetchMarketIndices(apiKey) {
   const spy = validResults.find(r => r.symbol === 'SPY');
   const qqq = validResults.find(r => r.symbol === 'QQQ');
   const iwm = validResults.find(r => r.symbol === 'IWM');
-  const vix = validResults.find(r => r.symbol === 'UVXY');
+  const vix = validResults.find(r => r.symbol === 'I:VIX');
   
   // Market regime analysis
   const analysis = analyzeMarketRegime(spy, qqq, iwm, vix);
@@ -238,9 +238,9 @@ function analyzeMarketRegime(spy, qqq, iwm, vix) {
   const bullCount = signals.filter(s => s.type === 'bullish').length;
   const bearCount = signals.filter(s => s.type === 'bearish').length;
   
-  if (bullCount > bearCount) regime = 'Risk-On';
-  else if (bearCount > bullCount) regime = 'Risk-Off';
-  else regime = 'Mixed';
+  if (bullCount > bearCount) regime = 'Buyers In Control';
+  else if (bearCount > bullCount) regime = 'Defensive Tone';
+  else regime = 'Choppy Action';
   
   return { regime, signals };
 }
