@@ -122,9 +122,9 @@ async function fetchStockData(symbol, apiKey) {
   }
 }
 
-// Function to fetch market indices data (SPY, QQQ, IWM, VIX)
+// Function to fetch market indices data (SPY, QQQ, IWM)
 async function fetchMarketIndices(apiKey) {
-  const indices = ['SPY', 'QQQ', 'IWM', 'I:VIX']; // VIX volatility index
+  const indices = ['SPY', 'QQQ', 'IWM']; // Major market indices
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
@@ -169,23 +169,21 @@ async function fetchMarketIndices(apiKey) {
   const spy = validResults.find(r => r.symbol === 'SPY');
   const qqq = validResults.find(r => r.symbol === 'QQQ');
   const iwm = validResults.find(r => r.symbol === 'IWM');
-  const vix = validResults.find(r => r.symbol === 'I:VIX');
   
   // Market regime analysis
-  const analysis = analyzeMarketRegime(spy, qqq, iwm, vix);
+  const analysis = analyzeMarketRegime(spy, qqq, iwm);
   
   return {
     spy,
     qqq,
     iwm,
-    vix,
     analysis,
     timestamp: new Date().toISOString()
   };
 }
 
 // Analyze market regime based on indices
-function analyzeMarketRegime(spy, qqq, iwm, vix) {
+function analyzeMarketRegime(spy, qqq, iwm) {
   const signals = [];
   let regime = 'Neutral';
   
@@ -215,21 +213,6 @@ function analyzeMarketRegime(spy, qqq, iwm, vix) {
       signals.push({
         type: 'bearish',
         message: 'Flight to quality (' + smallCapRelative.toFixed(1) + '%)'
-      });
-    }
-  }
-  
-  if (vix) {
-    const vixLevel = parseFloat(vix.current);
-    if (vixLevel > 25) {
-      signals.push({
-        type: 'extreme',
-        message: 'Elevated volatility (' + vixLevel.toFixed(1) + ')'
-      });
-    } else if (vixLevel < 15) {
-      signals.push({
-        type: 'complacent',
-        message: 'Low volatility environment'
       });
     }
   }
