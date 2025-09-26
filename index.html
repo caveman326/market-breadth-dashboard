@@ -410,20 +410,20 @@
         .gauge-high { --gauge-color: var(--bull); }
         .gauge-extreme-high { --gauge-color: var(--extreme-bull); }
         
-        /* Chart Section */
+        /* Chart Section - White Background */
         .chart-container {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             height: 400px;
         }
         
         .chart-title {
             font-size: 20px;
             font-weight: 600;
-            color: #ffffff;
+            color: #1f2937;
             margin-bottom: 20px;
             text-align: center;
         }
@@ -444,10 +444,10 @@
         
         .time-range-btn {
             padding: 8px 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
-            color: var(--text-secondary);
+            color: #6b7280;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -456,9 +456,9 @@
         }
         
         .time-range-btn:hover {
-            background: #1a1f2e;
-            border-color: #2a3441;
-            color: var(--text-primary);
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            color: #374151;
         }
         
         .time-range-btn.active {
@@ -1217,36 +1217,67 @@
                         },
                         scales: {
                             x: {
-                                ticks: { color: 'var(--text-secondary)' },
-                                grid: { color: 'var(--border-color)' }
+                                ticks: { color: '#6b7280' },
+                                grid: { color: '#e5e7eb' }
                             },
                             y: {
                                 min: 0,
                                 max: 100,
                                 ticks: { 
-                                    color: 'var(--text-secondary)',
+                                    color: '#6b7280',
                                     callback: function(value) {
                                         return value + '%';
                                     }
                                 },
-                                grid: { color: 'var(--border-color)' }
+                                grid: { color: '#e5e7eb' }
                             }
                         },
                         plugins: {
                             legend: {
                                 labels: { 
-                                    color: '#ffffff',
+                                    color: '#374151',
                                     filter: function(legendItem, chartData) {
                                         const dataset = chartData.datasets[legendItem.datasetIndex];
                                         return !dataset.label.includes('(');
+                                    },
+                                    generateLabels: function(chart) {
+                                        const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                        const labels = original.call(this, chart);
+                                        
+                                        return labels.filter(label => {
+                                            const dataset = chart.data.datasets[label.datasetIndex];
+                                            return !dataset.label.includes('(');
+                                        }).map((label) => {
+                                            const dataset = chart.data.datasets[label.datasetIndex];
+                                            const meta = chart.getDatasetMeta(label.datasetIndex);
+                                            const isVisible = !meta.hidden;
+                                            
+                                            const icon = isVisible ? '✓' : '○';
+                                            
+                                            return {
+                                                ...label,
+                                                text: `${icon} ${dataset.label}`,
+                                                fontColor: '#374151',
+                                                strokeStyle: isVisible ? dataset.borderColor : '#9ca3af',
+                                                fillStyle: isVisible ? dataset.borderColor : '#9ca3af'
+                                            };
+                                        });
                                     }
+                                },
+                                onClick: function(e, legendItem) {
+                                    const chart = e.chart;
+                                    const index = legendItem.datasetIndex;
+                                    const meta = chart.getDatasetMeta(index);
+                                    
+                                    meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                                    chart.update();
                                 }
                             },
                             tooltip: {
-                                backgroundColor: 'var(--bg-secondary)',
-                                titleColor: '#ffffff',
-                                bodyColor: 'var(--text-primary)',
-                                borderColor: 'var(--border-color)',
+                                backgroundColor: '#ffffff',
+                                titleColor: '#1f2937',
+                                bodyColor: '#374151',
+                                borderColor: '#e5e7eb',
                                 borderWidth: 1
                             }
                         }
