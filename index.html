@@ -12,10 +12,39 @@
             box-sizing: border-box;
         }
         
+        :root {
+            /* Semantic Color System - Temperature Based */
+            --extreme-bear: #991b1b;  /* Deep red - extreme oversold */
+            --bear: #dc2626;          /* Red - oversold */
+            --caution: #f97316;       /* Orange - caution zone */
+            --neutral: #fbbf24;       /* Yellow - neutral */
+            --bull: #84cc16;          /* Light green - bullish */
+            --extreme-bull: #16a34a;  /* Deep green - extreme overbought */
+            
+            /* Index Brand Colors */
+            --spy-blue: #2563eb;      /* S&P 500 - Market baseline */
+            --qqq-purple: #7c3aed;    /* Nasdaq - Tech/Innovation */
+            --iwm-amber: #f59e0b;     /* Russell - Small cap energy */
+            
+            /* Temporal Hierarchy - Vibrancy decreases with timeframe */
+            --day-vibrancy: 1;         /* Most reactive */
+            --sma10-vibrancy: 0.85;    /* Short-term */
+            --sma20-vibrancy: 0.7;     /* Medium-term */
+            --sma200-vibrancy: 0.55;   /* Long-term, most stable */
+            
+            /* UI Foundation */
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #151823;
+            --bg-tertiary: #0f1218;
+            --border-color: #1e2139;
+            --text-primary: #e0e6ed;
+            --text-secondary: #8b92a8;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0e1a;
-            color: #e0e6ed;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             padding: 20px;
             min-height: 100vh;
         }
@@ -33,14 +62,14 @@
             justify-content: space-between;
             align-items: center;
             padding: 20px 0;
-            border-bottom: 1px solid #1e2139;
+            border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
         }
         
         .title {
             font-size: 28px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--spy-blue) 0%, var(--qqq-purple) 100%);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -51,7 +80,7 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: #151823;
+            background: var(--bg-secondary);
             border-radius: 20px;
             font-size: 13px;
         }
@@ -63,20 +92,20 @@
             animation: pulse 2s infinite;
         }
         
-        .status-open .status-dot { background: #10b981; }
-        .status-closed .status-dot { background: #8b92a8; }
+        .status-open .status-dot { background: var(--extreme-bull); }
+        .status-closed .status-dot { background: var(--text-secondary); }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
         
-        /* Market Indices Section - Hero */
+        /* Market Indices Section */
         .indices-section {
-            background: linear-gradient(135deg, #151823 0%, #1a1f2e 100%);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a1f2e 100%);
             border-radius: 20px;
             padding: 30px;
-            border: 1px solid #1e2139;
+            border: 1px solid var(--border-color);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
@@ -92,7 +121,7 @@
         
         .section-subtitle {
             font-size: 12px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             font-weight: 400;
         }
         
@@ -104,7 +133,7 @@
         }
         
         .index-card {
-            background: #0f1218;
+            background: var(--bg-tertiary);
             border-radius: 12px;
             padding: 20px;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -127,9 +156,10 @@
             background: linear-gradient(90deg, var(--card-color) 0%, transparent 100%);
         }
         
-        .spy-card { --card-color: #3b82f6; }
-        .qqq-card { --card-color: #8b5cf6; }
-        .iwm-card { --card-color: #f59e0b; }
+        /* Updated Index Card Colors */
+        .spy-card { --card-color: var(--spy-blue); }
+        .qqq-card { --card-color: var(--qqq-purple); }
+        .iwm-card { --card-color: var(--iwm-amber); }
         
         .index-header {
             display: flex;
@@ -146,7 +176,7 @@
         
         .index-name {
             font-size: 11px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             text-transform: uppercase;
         }
         
@@ -171,7 +201,7 @@
         
         .change-label {
             font-size: 10px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             text-transform: uppercase;
         }
         
@@ -180,9 +210,9 @@
             font-weight: 600;
         }
         
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
-        .neutral { color: #f59e0b; }
+        .positive { color: var(--extreme-bull); }
+        .negative { color: var(--bear); }
+        .neutral { color: var(--neutral); }
         
         .index-sparkline {
             height: 40px;
@@ -194,12 +224,12 @@
             display: flex;
             justify-content: space-between;
             padding-top: 12px;
-            border-top: 1px solid #1e2139;
+            border-top: 1px solid var(--border-color);
             font-size: 12px;
         }
         
         .vs-spy {
-            color: #8b92a8;
+            color: var(--text-secondary);
         }
         
         .vs-spy-value {
@@ -208,7 +238,7 @@
         
         /* Market Regime Box */
         .regime-box {
-            background: #0f1218;
+            background: var(--bg-tertiary);
             border-radius: 12px;
             padding: 24px;
             text-align: center;
@@ -216,7 +246,7 @@
         
         .regime-label {
             font-size: 12px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             text-transform: uppercase;
             margin-bottom: 12px;
         }
@@ -227,9 +257,9 @@
             margin-bottom: 16px;
         }
         
-        .regime-risk-on { color: #10b981; }
-        .regime-risk-off { color: #ef4444; }
-        .regime-mixed { color: #f59e0b; }
+        .regime-risk-on { color: var(--extreme-bull); }
+        .regime-risk-off { color: var(--bear); }
+        .regime-mixed { color: var(--neutral); }
         
         .regime-signals {
             display: flex;
@@ -250,29 +280,29 @@
         }
         
         .signal.bullish {
-            background: #064e3b;
-            color: #10b981;
+            background: rgba(22, 163, 74, 0.1);
+            color: var(--extreme-bull);
         }
         
         .signal.bearish {
-            background: #7f1d1d;
-            color: #ef4444;
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--bear);
         }
         
         .signal.extreme {
-            background: #78350f;
-            color: #f59e0b;
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--caution);
         }
         
         .signal.complacent {
-            background: #1e3a8a;
-            color: #60a5fa;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--spy-blue);
         }
         
-        /* Breadth Section */
+        /* Modern Radial Gauge Design */
         .breadth-section {
-            background: #151823;
-            border: 1px solid #1e2139;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -286,46 +316,104 @@
         }
         
         .single-gauge {
-            background: #0f1218;
+            background: var(--bg-tertiary);
             border-radius: 12px;
             padding: 20px;
             text-align: center;
+            position: relative;
+            transition: transform 0.2s ease;
         }
         
+        .single-gauge:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Modern Radial Progress Ring */
         .gauge-wrapper {
             position: relative;
-            width: 200px;
-            height: 100px;
+            width: 160px;
+            height: 160px;
             margin: 0 auto 20px;
         }
         
         .gauge-svg {
             width: 100%;
             height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .gauge-background {
+            stroke: var(--border-color);
+            stroke-width: 12;
+            fill: none;
+            stroke-linecap: round;
+        }
+        
+        /* Zone indicators */
+        .gauge-zones {
+            stroke-width: 12;
+            fill: none;
+            opacity: 0.15;
+            stroke-linecap: round;
+        }
+        
+        .zone-danger { stroke: var(--bear); }
+        .zone-caution { stroke: var(--caution); }
+        .zone-neutral { stroke: var(--neutral); }
+        .zone-healthy { stroke: var(--bull); }
+        .zone-extreme { stroke: var(--extreme-bull); }
+        
+        .gauge-fill {
+            stroke-width: 12;
+            fill: none;
+            stroke-linecap: round;
+            transition: stroke-dasharray 2s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+        
+        /* Value display in center of radial gauge */
+        .gauge-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
         }
         
         .gauge-value {
-            position: absolute;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            color: #ffffff;
             line-height: 1;
+            transition: color 0.3s ease;
+        }
+        
+        .gauge-sublabel {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 4px;
+            letter-spacing: 1px;
         }
         
         .gauge-label {
             font-size: 12px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         
+        /* Dynamic gauge colors based on value */
+        .gauge-extreme-low { --gauge-color: var(--extreme-bear); }
+        .gauge-low { --gauge-color: var(--bear); }
+        .gauge-caution-low { --gauge-color: var(--caution); }
+        .gauge-neutral { --gauge-color: var(--neutral); }
+        .gauge-high { --gauge-color: var(--bull); }
+        .gauge-extreme-high { --gauge-color: var(--extreme-bull); }
+        
         /* Chart Section */
         .chart-container {
-            background: #151823;
-            border: 1px solid #1e2139;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -345,17 +433,6 @@
             height: 320px;
         }
         
-        /* Chart Legend Styling */
-        .chart-wrapper canvas {
-            position: relative;
-        }
-        
-        /* Custom legend item styling with CSS for strikethrough */
-        .legend-hidden {
-            text-decoration: line-through !important;
-            opacity: 0.6;
-        }
-        
         /* Time Range Selector */
         .time-range-selector {
             display: flex;
@@ -367,10 +444,10 @@
         
         .time-range-btn {
             padding: 8px 16px;
-            background: #0f1218;
-            border: 1px solid #1e2139;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -381,24 +458,19 @@
         .time-range-btn:hover {
             background: #1a1f2e;
             border-color: #2a3441;
-            color: #e0e6ed;
+            color: var(--text-primary);
         }
         
         .time-range-btn.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: var(--spy-blue);
+            border-color: var(--spy-blue);
             color: #ffffff;
-        }
-        
-        .time-range-btn.active:hover {
-            background: #2563eb;
-            border-color: #2563eb;
         }
         
         /* Stats Grid */
         .stats-container {
-            background: #151823;
-            border: 1px solid #1e2139;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -411,7 +483,7 @@
         }
         
         .stat-item {
-            background: #0f1218;
+            background: var(--bg-tertiary);
             border-radius: 8px;
             padding: 16px;
             text-align: center;
@@ -419,7 +491,7 @@
         
         .stat-label {
             font-size: 11px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -430,20 +502,16 @@
             font-weight: 700;
         }
         
-        .stat-positive { color: #10b981; }
-        .stat-negative { color: #ef4444; }
-        .stat-neutral { color: #f59e0b; }
-        
         /* Loading & Error States */
         .loading {
             text-align: center;
             padding: 40px;
-            color: #8b92a8;
+            color: var(--text-secondary);
         }
         
         .error {
-            color: #ef4444;
-            background: #2d1b1b;
+            color: var(--bear);
+            background: rgba(220, 38, 38, 0.1);
             padding: 16px;
             border-radius: 8px;
             margin: 20px 0;
@@ -451,7 +519,7 @@
         }
         
         .retry-button {
-            background: #3b82f6;
+            background: var(--spy-blue);
             color: white;
             border: none;
             padding: 10px 20px;
@@ -462,22 +530,28 @@
         }
         
         .retry-button:hover {
-            background: #2563eb;
+            background: #1d4ed8;
         }
         
         .last-updated {
             font-size: 12px;
-            color: #8b92a8;
+            color: var(--text-secondary);
             text-align: center;
             margin-top: 20px;
         }
         
         @keyframes fillGauge {
-            from { stroke-dasharray: 0 628; }
+            from { 
+                stroke-dasharray: 0 502;
+                opacity: 0.3;
+            }
+            to {
+                opacity: 1;
+            }
         }
         
         .gauge-fill {
-            animation: fillGauge 2s ease-out;
+            animation: fillGauge 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         
         @media (max-width: 768px) {
@@ -528,90 +602,121 @@
             </div>
             
             <div class="gauges-grid">
+                <!-- Day-of Breadth Gauge -->
                 <div class="single-gauge">
                     <div class="gauge-wrapper">
-                        <svg class="gauge-svg" viewBox="0 0 200 100">
-                            <path d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#1e2139" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-linecap="round"/>
-                            <path id="gaugeDayFill" 
-                                  d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#8b5cf6" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-dasharray="0 251"
-                                  stroke-linecap="round"
-                                  class="gauge-fill"/>
+                        <svg class="gauge-svg" viewBox="0 0 160 160">
+                            <!-- Background circle -->
+                            <circle cx="80" cy="80" r="70" class="gauge-background" />
+                            
+                            <!-- Zone indicators (subtle) -->
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-danger"
+                                    stroke-dasharray="44 502" stroke-dashoffset="0" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-caution"
+                                    stroke-dasharray="44 502" stroke-dashoffset="-44" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-neutral"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-88" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-healthy"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-151" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-extreme"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-214" />
+                            
+                            <!-- Progress fill -->
+                            <circle id="gaugeDayFill" cx="80" cy="80" r="70" 
+                                    class="gauge-fill"
+                                    stroke-dasharray="0 502" />
                         </svg>
-                        <div class="gauge-value" id="gaugeDayValue">--</div>
+                        <div class="gauge-center">
+                            <div class="gauge-value" id="gaugeDayValue">--</div>
+                            <div class="gauge-sublabel">Today</div>
+                        </div>
                     </div>
                     <div class="gauge-label">Day-of Breadth</div>
                 </div>
                 
+                <!-- 10-Day SMA Gauge -->
                 <div class="single-gauge">
                     <div class="gauge-wrapper">
-                        <svg class="gauge-svg" viewBox="0 0 200 100">
-                            <path d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#1e2139" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-linecap="round"/>
-                            <path id="gauge10Fill" 
-                                  d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#10b981" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-dasharray="0 251"
-                                  stroke-linecap="round"
-                                  class="gauge-fill"/>
+                        <svg class="gauge-svg" viewBox="0 0 160 160">
+                            <circle cx="80" cy="80" r="70" class="gauge-background" />
+                            
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-danger"
+                                    stroke-dasharray="44 502" stroke-dashoffset="0" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-caution"
+                                    stroke-dasharray="44 502" stroke-dashoffset="-44" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-neutral"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-88" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-healthy"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-151" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-extreme"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-214" />
+                            
+                            <circle id="gauge10Fill" cx="80" cy="80" r="70" 
+                                    class="gauge-fill"
+                                    stroke-dasharray="0 502" />
                         </svg>
-                        <div class="gauge-value" id="gauge10Value">--</div>
+                        <div class="gauge-center">
+                            <div class="gauge-value" id="gauge10Value">--</div>
+                            <div class="gauge-sublabel">10-Day</div>
+                        </div>
                     </div>
                     <div class="gauge-label">10-Day SMA</div>
                 </div>
                 
+                <!-- 20-Day SMA Gauge -->
                 <div class="single-gauge">
                     <div class="gauge-wrapper">
-                        <svg class="gauge-svg" viewBox="0 0 200 100">
-                            <path d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#1e2139" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-linecap="round"/>
-                            <path id="gauge20Fill" 
-                                  d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#f59e0b" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-dasharray="0 251"
-                                  stroke-linecap="round"
-                                  class="gauge-fill"/>
+                        <svg class="gauge-svg" viewBox="0 0 160 160">
+                            <circle cx="80" cy="80" r="70" class="gauge-background" />
+                            
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-danger"
+                                    stroke-dasharray="44 502" stroke-dashoffset="0" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-caution"
+                                    stroke-dasharray="44 502" stroke-dashoffset="-44" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-neutral"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-88" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-healthy"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-151" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-extreme"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-214" />
+                            
+                            <circle id="gauge20Fill" cx="80" cy="80" r="70" 
+                                    class="gauge-fill"
+                                    stroke-dasharray="0 502" />
                         </svg>
-                        <div class="gauge-value" id="gauge20Value">--</div>
+                        <div class="gauge-center">
+                            <div class="gauge-value" id="gauge20Value">--</div>
+                            <div class="gauge-sublabel">20-Day</div>
+                        </div>
                     </div>
                     <div class="gauge-label">20-Day SMA</div>
                 </div>
                 
+                <!-- 200-Day SMA Gauge -->
                 <div class="single-gauge">
                     <div class="gauge-wrapper">
-                        <svg class="gauge-svg" viewBox="0 0 200 100">
-                            <path d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#1e2139" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-linecap="round"/>
-                            <path id="gauge200Fill" 
-                                  d="M 20 80 A 80 80 0 0 1 180 80" 
-                                  stroke="#3b82f6" 
-                                  stroke-width="16" 
-                                  fill="none"
-                                  stroke-dasharray="0 251"
-                                  stroke-linecap="round"
-                                  class="gauge-fill"/>
+                        <svg class="gauge-svg" viewBox="0 0 160 160">
+                            <circle cx="80" cy="80" r="70" class="gauge-background" />
+                            
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-danger"
+                                    stroke-dasharray="44 502" stroke-dashoffset="0" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-caution"
+                                    stroke-dasharray="44 502" stroke-dashoffset="-44" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-neutral"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-88" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-healthy"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-151" />
+                            <circle cx="80" cy="80" r="70" class="gauge-zones zone-extreme"
+                                    stroke-dasharray="63 502" stroke-dashoffset="-214" />
+                            
+                            <circle id="gauge200Fill" cx="80" cy="80" r="70" 
+                                    class="gauge-fill"
+                                    stroke-dasharray="0 502" />
                         </svg>
-                        <div class="gauge-value" id="gauge200Value">--</div>
+                        <div class="gauge-center">
+                            <div class="gauge-value" id="gauge200Value">--</div>
+                            <div class="gauge-sublabel">200-Day</div>
+                        </div>
                     </div>
                     <div class="gauge-label">200-Day SMA</div>
                 </div>
@@ -626,24 +731,24 @@
                 <button class="retry-button" onclick="window.location.reload()">Retry</button>
             </div>
             
-            <!-- Stats Section - moved here from bottom -->
+            <!-- Stats Section -->
             <div class="stats-container" id="statsContainer">
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-label">Stocks Positive in the S&P 500</div>
-                        <div class="stat-value stat-positive" id="dayUpCount">--</div>
+                        <div class="stat-label">Stocks Positive Today</div>
+                        <div class="stat-value" id="dayUpCount">--</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Stocks above 10-Day SMA</div>
-                        <div class="stat-value stat-positive" id="above10Count">--</div>
+                        <div class="stat-label">Above 10-Day SMA</div>
+                        <div class="stat-value" id="above10Count">--</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Stocks above 20-Day SMA</div>
-                        <div class="stat-value stat-neutral" id="above20Count">--</div>
+                        <div class="stat-label">Above 20-Day SMA</div>
+                        <div class="stat-value" id="above20Count">--</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Stocks above 200-Day SMA</div>
-                        <div class="stat-value stat-positive" id="above200Count">--</div>
+                        <div class="stat-label">Above 200-Day SMA</div>
+                        <div class="stat-value" id="above200Count">--</div>
                     </div>
                 </div>
                 
@@ -681,29 +786,21 @@
                 
                 this.historicalData = {};
                 this.chart = null;
-                this.currentTimeRange = 'all'; // Track selected time range
+                this.currentTimeRange = 'all';
                 
                 this.init();
             }
             
             async init() {
                 this.updateMarketStatus();
-                
-                // Initialize time range selector
                 this.initTimeRangeSelector();
-                
-                // Load historical data first
                 await this.loadHistoricalData();
                 
                 try {
-                    // Fetch all data using the 'all' endpoint
                     await this.fetchAllData();
                     
-                    // Auto-refresh during market hours
                     if (this.isMarketHours()) {
-                        // Refresh indices every 5 minutes
                         setInterval(() => this.fetchIndicesData(), 5 * 60 * 1000);
-                        // Refresh breadth every hour
                         setInterval(() => this.fetchBreadthData(), 60 * 60 * 1000);
                     }
                 } catch (error) {
@@ -729,13 +826,11 @@
                         throw new Error(data.error);
                     }
                     
-                    // Process indices data
                     if (data.indices) {
                         this.marketData.indices = data.indices;
                         this.updateIndicesDisplay();
                     }
                     
-                    // Process breadth data - handle both nested and direct structure
                     const breadthData = data.breadth || data;
                     if (breadthData && breadthData.dayOf) {
                         this.marketData.breadth = breadthData;
@@ -785,34 +880,28 @@
                 const grid = document.getElementById('indicesGrid');
                 grid.innerHTML = '';
                 
-                // SPY Card
                 if (indices.spy) {
                     grid.innerHTML += this.createIndexCard('SPY', 'S&P 500', indices.spy, 'spy-card');
                 }
                 
-                // QQQ Card with relative performance
                 if (indices.qqq && indices.spy) {
                     const relPerf = (parseFloat(indices.qqq.weekChange) - parseFloat(indices.spy.weekChange)).toFixed(1);
                     grid.innerHTML += this.createIndexCard('QQQ', 'Nasdaq 100', indices.qqq, 'qqq-card', relPerf);
                 }
                 
-                // IWM Card with relative performance
                 if (indices.iwm && indices.spy) {
                     const relPerf = (parseFloat(indices.iwm.weekChange) - parseFloat(indices.spy.weekChange)).toFixed(1);
                     grid.innerHTML += this.createIndexCard('IWM', 'Russell 2000', indices.iwm, 'iwm-card', relPerf);
                 }
                 
-                
-                // Update regime analysis
                 if (indices.analysis) {
                     this.updateRegimeAnalysis(indices.analysis);
                 }
                 
-                // Create sparklines after DOM updates
                 setTimeout(() => {
-                    if (indices.spy) this.createSparkline('spy-spark', indices.spy.sparkline, '#3b82f6');
-                    if (indices.qqq) this.createSparkline('qqq-spark', indices.qqq.sparkline, '#8b5cf6');
-                    if (indices.iwm) this.createSparkline('iwm-spark', indices.iwm.sparkline, '#f59e0b');
+                    if (indices.spy) this.createSparkline('spy-spark', indices.spy.sparkline, 'var(--spy-blue)');
+                    if (indices.qqq) this.createSparkline('qqq-spark', indices.qqq.sparkline, 'var(--qqq-purple)');
+                    if (indices.iwm) this.createSparkline('iwm-spark', indices.iwm.sparkline, 'var(--iwm-amber)');
                 }, 100);
             }
             
@@ -864,7 +953,6 @@
                 `;
             }
             
-            
             updateRegimeAnalysis(analysis) {
                 const regimeBox = document.getElementById('regimeBox');
                 const regimeValue = document.getElementById('regimeValue');
@@ -872,7 +960,6 @@
                 
                 regimeBox.style.display = 'block';
                 
-                // Set regime value and color
                 regimeValue.textContent = analysis.regime;
                 regimeValue.className = 'regime-value';
                 
@@ -884,7 +971,6 @@
                     regimeValue.classList.add('regime-mixed');
                 }
                 
-                // Display signals
                 if (analysis.signals && analysis.signals.length > 0) {
                     let signalsHtml = analysis.signals.map(signal => `
                         <div class="signal ${signal.type}">
@@ -893,31 +979,28 @@
                         </div>
                     `).join('');
                     
-                    // Add translation based on regime
                     let translation = '';
                     if (analysis.regime === 'Buyers In Control') {
-                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Healthy market with broad participation</div>';
+                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">Translation: Healthy market with broad participation</div>';
                     } else if (analysis.regime === 'Defensive Tone') {
-                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Risk-off behavior, large caps holding better</div>';
+                        translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">Translation: Risk-off behavior, large caps holding better</div>';
                     } else {
-                        // Choppy Action - explain why
                         const strongCount = analysis.strongSignals || 0;
                         if (strongCount === 0) {
-                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: No strong sector leadership, market lacks conviction</div>';
+                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">Translation: No strong sector leadership, market lacks conviction</div>';
                         } else {
-                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Mixed signals creating choppy, range-bound action</div>';
+                            translation = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">Translation: Mixed signals creating choppy, range-bound action</div>';
                         }
                     }
                     
                     regimeSignals.innerHTML = signalsHtml + translation;
                 } else {
-                    // Fallback for completely empty signals
                     regimeSignals.innerHTML = `
                         <div class="signal neutral">
                             <span>📊</span>
                             Market data incomplete
                         </div>
-                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e2139; color: #8b92a8; font-size: 13px;">Translation: Unable to analyze market regime</div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">Translation: Unable to analyze market regime</div>
                     `;
                 }
             }
@@ -926,33 +1009,77 @@
                 const breadth = this.marketData.breadth;
                 if (!breadth) return;
                 
-                // Update all 4 gauges including 200-day
-                this.updateGauge('gaugeDay', breadth.dayOf.percentage, '#8b5cf6');
-                this.updateGauge('gauge10', breadth.sma10.percentage, '#10b981');
-                this.updateGauge('gauge20', breadth.sma20.percentage, '#f59e0b');
-                this.updateGauge('gauge200', breadth.sma200.percentage, '#3b82f6');
+                // Update gauges with new modern design
+                this.updateModernGauge('gaugeDay', breadth.dayOf.percentage);
+                this.updateModernGauge('gauge10', breadth.sma10.percentage);
+                this.updateModernGauge('gauge20', breadth.sma20.percentage);
+                this.updateModernGauge('gauge200', breadth.sma200.percentage);
                 
-                // Update stats
-                document.getElementById('dayUpCount').textContent = breadth.dayOf.up || 0;
-                document.getElementById('above10Count').textContent = breadth.sma10.above || 0;
-                document.getElementById('above20Count').textContent = breadth.sma20.above || 0;
-                document.getElementById('above200Count').textContent = breadth.sma200.above || 0;
+                // Update stats with dynamic colors
+                this.updateStatValue('dayUpCount', breadth.dayOf.up || 0, breadth.dayOf.percentage);
+                this.updateStatValue('above10Count', breadth.sma10.above || 0, breadth.sma10.percentage);
+                this.updateStatValue('above20Count', breadth.sma20.above || 0, breadth.sma20.percentage);
+                this.updateStatValue('above200Count', breadth.sma200.above || 0, breadth.sma200.percentage);
                 
-                // Update chart with historical data
                 this.createChart();
             }
             
-            updateGauge(gaugeId, percentage, color) {
-                // Ensure percentage is a valid number
+            updateModernGauge(gaugeId, percentage) {
                 const pct = percentage || 0;
-                document.getElementById(`${gaugeId}Value`).textContent = pct + '%';
+                const valueElement = document.getElementById(`${gaugeId}Value`);
+                const fillElement = document.getElementById(`${gaugeId}Fill`);
                 
-                const fillPath = document.getElementById(`${gaugeId}Fill`);
-                const circumference = 251;
+                valueElement.textContent = pct + '%';
+                
+                // Determine color class based on percentage
+                let colorClass = '';
+                let strokeColor = '';
+                
+                if (pct < 20) {
+                    colorClass = 'gauge-extreme-low';
+                    strokeColor = 'var(--extreme-bear)';
+                } else if (pct < 40) {
+                    colorClass = 'gauge-low';
+                    strokeColor = 'var(--bear)';
+                } else if (pct < 50) {
+                    colorClass = 'gauge-caution-low';
+                    strokeColor = 'var(--caution)';
+                } else if (pct < 60) {
+                    colorClass = 'gauge-neutral';
+                    strokeColor = 'var(--neutral)';
+                } else if (pct < 80) {
+                    colorClass = 'gauge-high';
+                    strokeColor = 'var(--bull)';
+                } else {
+                    colorClass = 'gauge-extreme-high';
+                    strokeColor = 'var(--extreme-bull)';
+                }
+                
+                // Apply color to value text
+                valueElement.style.color = strokeColor;
+                
+                // Calculate fill for full circle (circumference = 2 * π * r)
+                const circumference = 2 * Math.PI * 70; // ~440
                 const fillLength = (pct / 100) * circumference;
                 
-                fillPath.style.strokeDasharray = `${fillLength} ${circumference}`;
-                fillPath.style.stroke = color;
+                fillElement.style.stroke = strokeColor;
+                fillElement.style.strokeDasharray = `${fillLength} ${circumference}`;
+            }
+            
+            updateStatValue(elementId, value, percentage) {
+                const element = document.getElementById(elementId);
+                element.textContent = value;
+                
+                // Apply color based on percentage
+                if (percentage < 30) {
+                    element.style.color = 'var(--bear)';
+                } else if (percentage < 50) {
+                    element.style.color = 'var(--caution)';
+                } else if (percentage < 70) {
+                    element.style.color = 'var(--neutral)';
+                } else {
+                    element.style.color = 'var(--extreme-bull)';
+                }
             }
             
             createSparkline(canvasId, data, color) {
@@ -993,7 +1120,6 @@
                 
                 const ctx = document.getElementById('breadthChart').getContext('2d');
                 
-                // Add today's data to historical
                 const today = new Date().toISOString().split('T')[0];
                 this.historicalData[today] = {
                     dayOf: breadth.dayOf.percentage,
@@ -1002,21 +1128,14 @@
                     sma200: breadth.sma200.percentage
                 };
                 
-                // Save to localStorage
                 this.saveHistoricalData();
                 
-                // Prepare chart data based on selected time range
                 const dates = this.getFilteredDates();
-                
                 if (dates.length === 0) return;
                 
-                // Destroy existing chart if it exists
                 if (this.chart) {
                     this.chart.destroy();
                 }
-                
-                // Store dashboard reference for legend callback
-                const dashboard = this;
                 
                 this.chart = new Chart(ctx, {
                     type: 'line',
@@ -1029,45 +1148,44 @@
                             {
                                 label: '200-Day Breadth',
                                 data: dates.map(d => this.historicalData[d]?.sma200 || null),
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderColor: 'var(--spy-blue)',
+                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
                                 borderWidth: 3,
                                 fill: false,
                                 tension: 0.2,
-                                hidden: true // Hidden by default
+                                hidden: true
                             },
                             {
                                 label: '20-Day',
                                 data: dates.map(d => this.historicalData[d]?.sma20 || null),
-                                borderColor: '#f59e0b',
+                                borderColor: 'rgba(249, 115, 22, 0.7)',
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.2,
-                                hidden: true // Hidden by default
+                                hidden: true
                             },
                             {
                                 label: '10-Day',
                                 data: dates.map(d => this.historicalData[d]?.sma10 || null),
-                                borderColor: '#10b981',
+                                borderColor: 'rgba(132, 204, 22, 0.85)',
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.2
-                                // Visible by default
                             },
                             {
                                 label: 'Day-of',
                                 data: dates.map(d => this.historicalData[d]?.dayOf || null),
-                                borderColor: '#8b5cf6',
+                                borderColor: 'rgba(251, 191, 36, 1)',
                                 borderWidth: 1,
                                 fill: false,
                                 tension: 0.2,
                                 borderDash: [5, 5],
-                                hidden: true // Hidden by default
+                                hidden: true
                             },
                             {
-                                label: 'Low Breadth (25%)',
+                                label: 'Oversold (25%)',
                                 data: dates.map(() => 25),
-                                borderColor: 'rgba(239, 68, 68, 0.4)',
+                                borderColor: 'rgba(220, 38, 38, 0.3)',
                                 borderWidth: 1,
                                 borderDash: [4, 4],
                                 fill: false,
@@ -1077,9 +1195,9 @@
                                 hidden: false
                             },
                             {
-                                label: 'High Breadth (80%)',
+                                label: 'Overbought (80%)',
                                 data: dates.map(() => 80),
-                                borderColor: 'rgba(16, 185, 129, 0.4)',
+                                borderColor: 'rgba(22, 163, 74, 0.3)',
                                 borderWidth: 1,
                                 borderDash: [4, 4],
                                 fill: false,
@@ -1099,85 +1217,41 @@
                         },
                         scales: {
                             x: {
-                                ticks: { color: '#8b92a8' },
-                                grid: { color: '#1e2139' }
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { color: 'var(--border-color)' }
                             },
                             y: {
                                 min: 0,
                                 max: 100,
                                 ticks: { 
-                                    color: '#8b92a8',
+                                    color: 'var(--text-secondary)',
                                     callback: function(value) {
                                         return value + '%';
                                     }
                                 },
-                                grid: { color: '#1e2139' }
+                                grid: { color: 'var(--border-color)' }
                             }
                         },
                         plugins: {
                             legend: {
                                 labels: { 
                                     color: '#ffffff',
-                                    usePointStyle: false,
                                     filter: function(legendItem, chartData) {
-                                        // Hide reference lines from legend
                                         const dataset = chartData.datasets[legendItem.datasetIndex];
-                                        return !dataset.label.includes('Breadth (');
+                                        return !dataset.label.includes('(');
                                     }
-                                },
-                                onClick: function(e, legendItem, legend) {
-                                    const chart = e.chart;
-                                    const index = legendItem.datasetIndex;
-                                    const meta = chart.getDatasetMeta(index);
-                                    
-                                    // Toggle visibility
-                                    meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
-                                    chart.update();
-                                    
-                                    // Update legend display after toggle
-                                    setTimeout(() => {
-                                        dashboard.updateLegendDisplay();
-                                    }, 50);
                                 }
                             },
                             tooltip: {
-                                backgroundColor: '#151823',
+                                backgroundColor: 'var(--bg-secondary)',
                                 titleColor: '#ffffff',
-                                bodyColor: '#e0e6ed',
-                                borderColor: '#1e2139',
+                                bodyColor: 'var(--text-primary)',
+                                borderColor: 'var(--border-color)',
                                 borderWidth: 1
                             }
                         }
                     }
                 });
-                
-                // Update legend with checkmarks after chart is created
-                setTimeout(() => {
-                    this.updateLegendDisplay();
-                }, 100);
-            }
-            
-            updateLegendDisplay() {
-                // Use DOM manipulation to add checkmarks to legend since Chart.js doesn't support this well
-                const legendItems = document.querySelectorAll('.chart-wrapper canvas + div ul li');
-                if (legendItems.length === 0) return;
-                
-                // Get chart datasets to check visibility
-                if (this.chart && this.chart.data.datasets) {
-                    this.chart.data.datasets.forEach((dataset, index) => {
-                        if (index < 4 && legendItems[index]) { // Only main datasets, skip reference lines
-                            const meta = this.chart.getDatasetMeta(index);
-                            const isVisible = !meta.hidden;
-                            const icon = isVisible ? '✓' : '○';
-                            const legendText = legendItems[index].querySelector('span');
-                            if (legendText) {
-                                legendText.style.color = '#ffffff';
-                                legendText.style.textDecoration = isVisible ? 'none' : 'line-through';
-                                legendText.textContent = `${icon} ${dataset.label}`;
-                            }
-                        }
-                    });
-                }
             }
             
             updateTimestamp() {
@@ -1217,13 +1291,9 @@
                 const buttons = document.querySelectorAll('.time-range-btn');
                 buttons.forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        // Remove active class from all buttons
                         buttons.forEach(b => b.classList.remove('active'));
-                        // Add active class to clicked button
                         e.target.classList.add('active');
-                        // Update current time range
                         this.currentTimeRange = e.target.dataset.range;
-                        // Recreate chart with new time range
                         if (this.marketData.breadth) {
                             this.createChart();
                         }
@@ -1235,11 +1305,9 @@
                 const allDates = Object.keys(this.historicalData).sort();
                 
                 if (this.currentTimeRange === 'all') {
-                    // Show full YTD (or last 180 days max for performance)
                     return allDates.length > 180 ? allDates.slice(-180) : allDates;
                 }
                 
-                // For specific day ranges (7, 30, 90, 180)
                 const days = parseInt(this.currentTimeRange);
                 return allDates.slice(-days);
             }
@@ -1256,7 +1324,6 @@
             }
             
             async loadHistoricalData() {
-                // First try to load from historical JSON file
                 try {
                     const response = await fetch('./historical-breadth-2025-ytd.json');
                     if (response.ok) {
@@ -1268,12 +1335,10 @@
                     console.log('No historical JSON file found, using localStorage fallback');
                 }
                 
-                // Merge with localStorage data (for any newer data)
                 const stored = localStorage.getItem('sp500BreadthHistory');
                 if (stored) {
                     try {
                         const localData = JSON.parse(stored);
-                        // Merge local data with file data (local data takes precedence for same dates)
                         this.historicalData = { ...this.historicalData, ...localData };
                         console.log(`Merged with ${Object.keys(localData).length} days from localStorage`);
                     } catch (e) {
@@ -1296,7 +1361,6 @@
                 document.getElementById('errorMessage').textContent = message;
                 document.getElementById('errorSection').style.display = 'block';
                 
-                // Also show in indices section if it's completely empty
                 const indicesGrid = document.getElementById('indicesGrid');
                 if (indicesGrid && indicesGrid.innerHTML.includes('Loading')) {
                     indicesGrid.innerHTML = `<div class="error">${message}</div>`;
