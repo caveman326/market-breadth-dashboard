@@ -1120,15 +1120,22 @@
                 
                 const ctx = document.getElementById('breadthChart').getContext('2d');
                 
+                // Daily Update Mechanism: Add today's breadth data to historical record
                 const today = new Date().toISOString().split('T')[0];
-                this.historicalData[today] = {
+                const todayData = {
                     dayOf: breadth.dayOf.percentage,
                     sma10: breadth.sma10.percentage,
                     sma20: breadth.sma20.percentage,
                     sma200: breadth.sma200.percentage
                 };
                 
-                this.saveHistoricalData();
+                // Only update if data has changed or doesn't exist
+                const existingData = this.historicalData[today];
+                if (!existingData || JSON.stringify(existingData) !== JSON.stringify(todayData)) {
+                    this.historicalData[today] = todayData;
+                    console.log(`Updated breadth data for ${today}:`, todayData);
+                    this.saveHistoricalData();
+                }
                 
                 const dates = this.getFilteredDates();
                 if (dates.length === 0) return;
@@ -1278,7 +1285,25 @@
                                 titleColor: '#1f2937',
                                 bodyColor: '#374151',
                                 borderColor: '#e5e7eb',
-                                borderWidth: 1
+                                borderWidth: 1,
+                                filter: function(tooltipItem, index, tooltipItems, chart) {
+                                    // Hide reference lines from tooltip
+                                    const dataset = chart.data.datasets[tooltipItem.datasetIndex];
+                                    return !dataset.label.includes('__HIDDEN_');
+                                },
+                                callbacks: {
+                                    // Format tooltip to show actual breadth percentages
+                                    label: function(context) {
+                                        const dataset = context.dataset;
+                                        const value = context.parsed.y;
+                                        
+                                        // Skip reference lines
+                                        if (dataset.label.includes('__HIDDEN_')) return null;
+                                        
+                                        // Show actual percentage value with label
+                                        return `${dataset.label}: ${value !== null ? value.toFixed(1) : 'N/A'}%`;
+                                    }
+                                }
                             }
                         }
                     }
@@ -1355,21 +1380,28 @@
             }
             
             async loadHistoricalData() {
+                // DAILY UPDATE MECHANISM:
+                // 1. Load base historical data from JSON file (backfilled YTD data)
+                // 2. Merge with localStorage (contains daily updates since backfill)
+                // 3. Each day when dashboard loads, new data is added via createChart()
+                
                 try {
                     const response = await fetch('./historical-breadth-2025-ytd.json');
                     if (response.ok) {
                         const fileData = await response.json();
-                        console.log(`Loaded ${Object.keys(fileData).length} days of historical breadth data`);
+                        console.log(`Loaded ${Object.keys(fileData).length} days of historical breadth data from file`);
                         this.historicalData = fileData;
                     }
                 } catch (error) {
                     console.log('No historical JSON file found, using localStorage fallback');
                 }
                 
+                // Merge with localStorage data (newer daily updates take precedence)
                 const stored = localStorage.getItem('sp500BreadthHistory');
                 if (stored) {
                     try {
                         const localData = JSON.parse(stored);
+                        // Local data overwrites file data for same dates (ensures latest values)
                         this.historicalData = { ...this.historicalData, ...localData };
                         console.log(`Merged with ${Object.keys(localData).length} days from localStorage`);
                     } catch (e) {
@@ -1378,6 +1410,18 @@
                 }
                 
                 console.log(`Total historical data points: ${Object.keys(this.historicalData).length}`);
+                
+                // Clean up old data (keep only last 365 days to prevent localStorage bloat)
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                const cutoffDate = oneYearAgo.toISOString().split('T')[0];
+                
+                const dates = Object.keys(this.historicalData).sort();
+                dates.forEach(date => {
+                    if (date < cutoffDate) {
+                        delete this.historicalData[date];
+                    }
+                });
             }
             
             saveHistoricalData() {
