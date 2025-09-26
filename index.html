@@ -1185,7 +1185,7 @@
                             {
                                 label: '__HIDDEN_REFERENCE_25__',
                                 data: dates.map(() => 25),
-                                borderColor: 'rgba(220, 38, 38, 0.6)',
+                                borderColor: 'rgba(220, 38, 38, 0.8)',
                                 borderWidth: 2,
                                 borderDash: [4, 4],
                                 fill: false,
@@ -1197,7 +1197,7 @@
                             {
                                 label: '__HIDDEN_REFERENCE_80__',
                                 data: dates.map(() => 80),
-                                borderColor: 'rgba(22, 163, 74, 0.6)',
+                                borderColor: 'rgba(22, 163, 74, 0.8)',
                                 borderWidth: 2,
                                 borderDash: [4, 4],
                                 fill: false,
@@ -1246,7 +1246,7 @@
                                         
                                         return labels.filter(label => {
                                             const dataset = chart.data.datasets[label.datasetIndex];
-                                            return !dataset.label.includes('(');
+                                            return !dataset.label.includes('__HIDDEN_');
                                         }).map((label) => {
                                             const dataset = chart.data.datasets[label.datasetIndex];
                                             const meta = chart.getDatasetMeta(label.datasetIndex);
